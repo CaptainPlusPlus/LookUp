@@ -1,6 +1,7 @@
 package day.data
 
 import day.domain.GeoPoint
+import day.domain.SunEvents
 import day.domain.SunRepository
 import io.ktor.client.*
 import io.ktor.client.call.*
@@ -15,20 +16,34 @@ class SunRepositoryImpl(
     private val httpClient: HttpClient
 ) : SunRepository {
     override suspend fun getSunAngleNowDeg(at: GeoPoint): Float {
+        val results = fetchSunResults(at) ?: return 45f
+        return calculateSunAngle(results)
+    }
+
+    override suspend fun getSunEvents(at: GeoPoint, date: String?): SunEvents {
+        val results = fetchSunResults(at, date) ?: throw Exception("Failed to fetch sun events")
+        return SunEvents(
+            sunrise = Instant.parse(results.sunrise),
+            sunset = Instant.parse(results.sunset)
+        )
+    }
+
+    private suspend fun fetchSunResults(at: GeoPoint, date: String? = null): SunriseSunsetResults? {
         return try {
             val response: SunriseSunsetResponse = httpClient.get("https://api.sunrise-sunset.org/json") {
                 parameter("lat", at.latitudeDeg)
                 parameter("lng", at.longitudeDeg)
                 parameter("formatted", 0)
+                date?.let { parameter("date", it) }
             }.body()
 
             if (response.status == "OK") {
-                calculateSunAngle(response.results)
+                response.results
             } else {
-                45f
+                null
             }
         } catch (e: Exception) {
-            45f
+            null
         }
     }
 

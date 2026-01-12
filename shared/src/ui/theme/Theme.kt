@@ -35,6 +35,8 @@ enum class AppThemeType {
     DAY, GOLDEN_HOUR, NIGHT
 }
 
+val LocalAppThemeType = staticCompositionLocalOf { AppThemeType.DAY }
+
 @Composable
 fun LookUpTheme(
     themeType: AppThemeType = AppThemeType.DAY,
@@ -79,7 +81,10 @@ fun LookUpTheme(
         else -> lightColorScheme()
     }
 
-    CompositionLocalProvider(LocalAppColors provides appColors) {
+    CompositionLocalProvider(
+        LocalAppColors provides appColors,
+        LocalAppThemeType provides themeType
+    ) {
         MaterialTheme(
             colorScheme = colorScheme,
             typography = AppTypography,
@@ -92,4 +97,8 @@ object LookUpTheme {
     val colors: AppColors
         @Composable
         get() = LocalAppColors.current
+
+    val themeType: AppThemeType
+        @Composable
+        get() = LocalAppThemeType.current
 }

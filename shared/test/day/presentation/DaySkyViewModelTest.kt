@@ -5,11 +5,16 @@ import day.domain.GetSunAngle
 import day.domain.LocationChoice
 import day.domain.LocationRepository
 import day.domain.SavedLocation
+import day.domain.SunEvents
 import day.domain.SunRepository
+import ui.theme.AppThemeType
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
+import kotlinx.datetime.Clock
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.seconds
 
 class FakeLocationRepositoryForDaySky : LocationRepository {
     var mockLocation = SavedLocation("london", "London", GeoPoint(51.5074, -0.1278))
@@ -43,9 +48,21 @@ class FakeLocationRepositoryForDaySky : LocationRepository {
     }
 }
 
-class FakeSunRepositoryForDaySky(private val mockAngle: Float = 45f) : SunRepository {
+class FakeSunRepositoryForDaySky(
+    private val mockAngle: Float = 45f,
+    private val mockEvents: SunEvents = SunEvents(
+        sunrise = kotlinx.datetime.Instant.fromEpochMilliseconds(0),
+        sunset = kotlinx.datetime.Instant.fromEpochMilliseconds(3600000)
+    ),
+    private val mockTomorrowEvents: SunEvents? = null
+) : SunRepository {
     override suspend fun getSunAngleNowDeg(at: GeoPoint): Float {
         return mockAngle
+    }
+
+    override suspend fun getSunEvents(at: GeoPoint, date: String?): SunEvents {
+        if (date != null && mockTomorrowEvents != null) return mockTomorrowEvents
+        return mockEvents
     }
 }
 
@@ -56,7 +73,7 @@ class DaySkyViewModelTest {
         val sunRepo = FakeSunRepositoryForDaySky(mockAngle = 75f)
         val getSunAngle = GetSunAngle(locationRepo, sunRepo)
 
-        val viewModel = DaySkyViewModel(getSunAngle, locationRepo)
+        val viewModel = DaySkyViewModel(getSunAngle, locationRepo, sunRepo)
 
         // Wait for init to complete
         delay(100)
@@ -77,7 +94,7 @@ class DaySkyViewModelTest {
         val sunRepo = FakeSunRepositoryForDaySky(mockAngle = 120f)
         val getSunAngle = GetSunAngle(locationRepo, sunRepo)
 
-        val viewModel = DaySkyViewModel(getSunAngle, locationRepo)
+        val viewModel = DaySkyViewModel(getSunAngle, locationRepo, sunRepo)
 
         // Wait for init to complete
         delay(100)
@@ -95,7 +112,7 @@ class DaySkyViewModelTest {
         val sunRepo = FakeSunRepositoryForDaySky()
         val getSunAngle = GetSunAngle(locationRepo, sunRepo)
 
-        val viewModel = DaySkyViewModel(getSunAngle, locationRepo)
+        val viewModel = DaySkyViewModel(getSunAngle, locationRepo, sunRepo)
 
         // Wait for init
         delay(100)
@@ -112,7 +129,7 @@ class DaySkyViewModelTest {
         val sunRepo = FakeSunRepositoryForDaySky()
         val getSunAngle = GetSunAngle(locationRepo, sunRepo)
 
-        val viewModel = DaySkyViewModel(getSunAngle, locationRepo)
+        val viewModel = DaySkyViewModel(getSunAngle, locationRepo, sunRepo)
 
         // Wait for init
         delay(100)
@@ -134,7 +151,7 @@ class DaySkyViewModelTest {
         val sunRepo = FakeSunRepositoryForDaySky(mockAngle = 90f)
         val getSunAngle = GetSunAngle(locationRepo, sunRepo)
 
-        val viewModel = DaySkyViewModel(getSunAngle, locationRepo)
+        val viewModel = DaySkyViewModel(getSunAngle, locationRepo, sunRepo)
 
         // Wait for init to complete
         delay(100)
@@ -153,7 +170,7 @@ class DaySkyViewModelTest {
         val locationRepo = FakeLocationRepositoryForDaySky()
         val sunRepo = FakeSunRepositoryForDaySky()
         val getSunAngle = GetSunAngle(locationRepo, sunRepo)
-        val viewModel = DaySkyViewModel(getSunAngle, locationRepo)
+        val viewModel = DaySkyViewModel(getSunAngle, locationRepo, sunRepo)
 
         var navigated = false
         viewModel.onChangeLocationClicked {
@@ -162,5 +179,124 @@ class DaySkyViewModelTest {
 
         assertEquals(true, navigated)
         assertEquals("", locationRepo.mockLocation.label)
+    }
+
+    @Test
+    fun testOnSunTapped_StartsCountdown_Daytime() = runBlocking {
+        val locationRepo = FakeLocationRepositoryForDaySky()
+        val now = Clock.System.now()
+        val sunset = now + 3600.seconds
+        val sunRepo = FakeSunRepositoryForDaySky(
+            mockAngle = 90f,
+            mockEvents = SunEvents(
+                sunrise = now - 3600.seconds,
+                sunset = sunset
+            )
+        )
+        val getSunAngle = GetSunAngle(locationRepo, sunRepo)
+        val viewModel = DaySkyViewModel(getSunAngle, locationRepo, sunRepo)
+
+        delay(100)
+        viewModel.onSunTapped()
+        delay(100) // wait for first tick
+
+        val state = viewModel.state.value
+        assertEquals(true, state.isBeforeSunset)
+        assertEquals(false, state.isBeforeSunrise)
+        assertTrue(state.countdownSeconds != null && state.countdownSeconds!! > 0)
+        assertTrue(state.eventTime != null)
+    }
+
+    @Test
+    fun testOnSunTapped_StartsCountdown_Nighttime_BeforeSunrise() = runBlocking {
+        val locationRepo = FakeLocationRepositoryForDaySky()
+        val now = Clock.System.now()
+        val sunrise = now + 3600.seconds
+        val sunRepo = FakeSunRepositoryForDaySky(
+            mockAngle = 0f,
+            mockEvents = SunEvents(
+                sunrise = sunrise,
+                sunset = now + 10000.seconds
+            )
+        )
+        val getSunAngle = GetSunAngle(locationRepo, sunRepo)
+        val viewModel = DaySkyViewModel(getSunAngle, locationRepo, sunRepo)
+
+        delay(100)
+        viewModel.onSunTapped()
+        delay(100) // wait for first tick
+
+        val state = viewModel.state.value
+        assertEquals(false, state.isBeforeSunset)
+        assertEquals(true, state.isBeforeSunrise)
+        assertTrue(state.countdownSeconds != null && state.countdownSeconds!! > 0)
+        assertTrue(state.eventTime != null)
+    }
+
+    @Test
+    fun testOnSunTapped_StartsCountdown_Nighttime_AfterSunset_BeforeTomorrowSunrise() = runBlocking {
+        val locationRepo = FakeLocationRepositoryForDaySky()
+        val now = Clock.System.now()
+        // Today's sunrise and sunset are in the past
+        val todaySunrise = now - 10000.seconds
+        val todaySunset = now - 1000.seconds
+        
+        val tomorrowSunrise = now + 20000.seconds
+        val tomorrowSunset = now + 60000.seconds
+
+        val sunRepo = FakeSunRepositoryForDaySky(
+            mockAngle = 180f, // Night
+            mockEvents = SunEvents(
+                sunrise = todaySunrise,
+                sunset = todaySunset
+            ),
+            mockTomorrowEvents = SunEvents(
+                sunrise = tomorrowSunrise,
+                sunset = tomorrowSunset
+            )
+        )
+        val getSunAngle = GetSunAngle(locationRepo, sunRepo)
+        val viewModel = DaySkyViewModel(getSunAngle, locationRepo, sunRepo)
+
+        delay(100)
+        viewModel.onSunTapped()
+        delay(100) // wait for first tick
+
+        val state = viewModel.state.value
+        assertEquals(true, state.isBeforeSunrise, "Should be before (tomorrow's) sunrise even if today's sunrise is past")
+        assertTrue(state.countdownSeconds != null, "Countdown should not be null")
+        assertTrue(state.countdownSeconds!! > 0)
+    }
+
+    @Test
+    fun testRefresh_Nighttime_AngleIs90() = runBlocking {
+        val locationRepo = FakeLocationRepositoryForDaySky()
+        val sunRepo = FakeSunRepositoryForDaySky(mockAngle = 10f) // Nighttime
+        val getSunAngle = GetSunAngle(locationRepo, sunRepo)
+
+        val viewModel = DaySkyViewModel(getSunAngle, locationRepo, sunRepo)
+
+        // Wait for init to complete
+        delay(100)
+
+        val state = viewModel.state.value
+        assertEquals(AppThemeType.NIGHT, state.themeType)
+        assertEquals(90f, state.sunAngleDeg)
+    }
+
+    @Test
+    fun testRefresh_Daytime_AngleIsActual() = runBlocking {
+        val locationRepo = FakeLocationRepositoryForDaySky()
+        val sunRepo = FakeSunRepositoryForDaySky(mockAngle = 45f) // Daytime
+        val getSunAngle = GetSunAngle(locationRepo, sunRepo)
+
+        val viewModel = DaySkyViewModel(getSunAngle, locationRepo, sunRepo)
+
+        // Wait for init to complete
+        delay(100)
+
+        val state = viewModel.state.value
+        assertEquals(AppThemeType.DAY, state.themeType)
+        assertEquals(45f, state.sunAngleDeg)
     }
 }

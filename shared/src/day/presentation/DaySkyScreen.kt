@@ -1,5 +1,8 @@
 package day.presentation
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -58,6 +61,38 @@ import kotlin.math.sin
 sealed class DaySkyRoute(val route: String) {
     object BlueSky : DaySkyRoute("blue_sky")
     object GoldenHour : DaySkyRoute("golden_hour")
+}
+
+@Composable
+private fun CountdownClock(
+    seconds: Long,
+    eventTime: String,
+    isNight: Boolean,
+    textColor: Color
+) {
+    val h = seconds / 3600
+    val m = (seconds % 3600) / 60
+    val s = seconds % 60
+    val timeString = "${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}"
+
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(
+            text = timeString,
+            style = MaterialTheme.typography.displayLarge.copy(
+                color = textColor,
+                fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                shadow = LookUpTheme.colors.textShadow
+            )
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = if (isNight) "Sunrise at $eventTime" else "Sunset at $eventTime",
+            style = MaterialTheme.typography.headlineSmall.copy(
+                color = textColor.copy(alpha = 0.8f),
+                shadow = LookUpTheme.colors.textShadow
+            )
+        )
+    }
 }
 
 @Composable
@@ -138,8 +173,23 @@ fun DaySkyScreen(
             color = themeColors.sunColor,
             isExpanded = state.isExpanded,
             isLoading = state.isLoading || state.location == null,
+            themeType = LookUpTheme.themeType,
             onClick = onSunClick
         )
+
+        AnimatedVisibility(
+            visible = state.isExpanded && state.countdownSeconds != null,
+            enter = fadeIn(animationSpec = tween(1000)),
+            exit = fadeOut(animationSpec = tween(500)),
+            modifier = Modifier.align(Alignment.Center)
+        ) {
+            CountdownClock(
+                seconds = state.countdownSeconds ?: 0,
+                eventTime = state.eventTime ?: "",
+                isNight = state.isBeforeSunrise,
+                textColor = if (state.isBeforeSunrise) Color.Black else Color.White
+            )
+        }
 
         Column(
             modifier = Modifier
@@ -184,6 +234,7 @@ private fun SunView(
     color: Color,
     isExpanded: Boolean,
     isLoading: Boolean,
+    themeType: AppThemeType,
     onClick: () -> Unit
 ) {
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
@@ -220,6 +271,8 @@ private fun SunView(
         val sunCenterX = sunCenter.x
         val sunCenterY = sunCenter.y
 
+        val lightRadius = if (themeType == AppThemeType.NIGHT) 233f else 700f
+
         // Light effect centered on sun using radial gradient background.
         // Constrained to the top 2/3rds of the screen height.
         Box(
@@ -237,7 +290,7 @@ private fun SunView(
                             x = sunCenterX * density,
                             y = sunCenterY * density
                         ),
-                        radius = 700f * density // 700.dp radius
+                        radius = lightRadius * density
                     )
                 )
         )
@@ -250,6 +303,7 @@ private fun SunView(
             density = density,
             isExpanded = isExpanded,
             isLoading = isLoading,
+            themeType = themeType,
             onClick = onClick
         )
     }
@@ -263,6 +317,7 @@ private fun SunBody(
     density: Float,
     isExpanded: Boolean,
     isLoading: Boolean,
+    themeType: AppThemeType,
     onClick: () -> Unit
 ) {
     val sunSize = 90.dp
@@ -277,7 +332,7 @@ private fun SunBody(
         )
     )
 
-    val targetSunbeamSize = if (isExpanded) sunSize * 20f else if (isLoading) sunSize * pulseScale else sunSize * 1.5f
+    val targetSunbeamSize = if (isExpanded) sunSize * 20f else if (isLoading) sunSize * pulseScale else if (themeType == AppThemeType.NIGHT) sunSize * 0.5f else sunSize * 1.5f
     val sunbeamSize by animateDpAsState(
         targetValue = targetSunbeamSize,
         animationSpec = if (isLoading) tween(0) else tween(durationMillis = 1000)
@@ -308,7 +363,8 @@ private fun SunBody(
                 )
                 .clickable(
                     interactionSource = remember { MutableInteractionSource() },
-                    indication = null
+                    indication = null,
+                    enabled = !isLoading
                 ) { onClick() }
         )
     }

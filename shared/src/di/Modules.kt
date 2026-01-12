@@ -18,6 +18,7 @@ import kotlinx.serialization.json.Json
 import org.koin.core.module.dsl.factoryOf
 import org.koin.core.module.dsl.singleOf
 import org.koin.core.module.dsl.viewModelOf
+import org.koin.compose.viewmodel.dsl.viewModel
 import org.koin.dsl.bind
 import org.koin.dsl.module
 import welcome.presentation.WelcomeViewModel
@@ -50,6 +51,6 @@ val sharedModule =
         singleOf(::GetSunAngle)
 
         // ViewModels
-        viewModelOf(::DaySkyViewModel)
+        viewModel { DaySkyViewModel(get(), get(), get()) }
         viewModelOf(::WelcomeViewModel)
     }
