@@ -100,10 +100,8 @@ fun DaySkyScreen(
             .fillMaxSize()
             .background(skyColor)
     ) {
-        val mockSunAngle = 120f
-        
         SunView(
-            angleDeg = mockSunAngle,
+            angleDeg = state.sunAngleDeg,
             color = sunColor,
             isExpanded = state.isExpanded,
             onClick = onSunClick

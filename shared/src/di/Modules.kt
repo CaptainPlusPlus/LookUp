@@ -1,5 +1,4 @@
 package di
-import app.RootViewModel
 import day.data.CitySearchRepositoryImpl
 import day.data.DeviceLocationRepositoryImpl
 import day.data.LocationRepositoryImpl
@@ -51,7 +50,6 @@ val sharedModule =
         singleOf(::GetSunAngle)
 
         // ViewModels
-        viewModelOf(::RootViewModel)
         viewModelOf(::DaySkyViewModel)
         viewModelOf(::WelcomeViewModel)
     }
