@@ -112,7 +112,7 @@ class DaySkyViewModelTest {
     }
 
     @Test
-    fun testOnSunTapped_SetsExpanded() = runBlocking {
+    fun testOnSunTapped_SetsExpandedAndHidesInfoCard() = runBlocking {
         val locationRepo = FakeLocationRepositoryForDaySky()
         val sunRepo = FakeSunRepositoryForDaySky()
         val getSunAngle = GetSunAngle(locationRepo, sunRepo)
@@ -122,10 +122,15 @@ class DaySkyViewModelTest {
         // Wait for init
         delay(100)
 
+        // Show info card first
+        viewModel.onToggleInfoCard()
+        assertEquals(true, viewModel.state.value.isInfoCardVisible)
+
         viewModel.onSunTapped()
 
         val state = viewModel.state.value
         assertEquals(true, state.isExpanded)
+        assertEquals(false, state.isInfoCardVisible)
     }
 
     @Test
@@ -323,5 +328,57 @@ class DaySkyViewModelTest {
         delay(100)
 
         assertEquals(listOf(day.domain.CloudType.CUMULUS), viewModel.state.value.cloudTypes)
+    }
+
+    @Test
+    fun testRefresh_NoClouds_ReturnsEmptyList() = runBlocking {
+        val locationRepo = FakeLocationRepositoryForDaySky()
+        val sunRepo = FakeSunRepositoryForDaySky()
+        val getSunAngle = GetSunAngle(locationRepo, sunRepo)
+        val cloudRepo = FakeCloudRepositoryForDaySky()
+        cloudRepo.mockResult = Result.success(
+            day.domain.CloudResult(
+                emptyList(),
+                day.domain.InputsUsed(5, 800)
+            )
+        )
+
+        val viewModel = DaySkyViewModel(getSunAngle, locationRepo, sunRepo, cloudRepo)
+
+        delay(100)
+
+        assertEquals(emptyList(), viewModel.state.value.cloudTypes)
+    }
+
+    @Test
+    fun testOnToggleInfoCard_ChangesVisibility() = runBlocking {
+        val locationRepo = FakeLocationRepositoryForDaySky()
+        val sunRepo = FakeSunRepositoryForDaySky()
+        val getSunAngle = GetSunAngle(locationRepo, sunRepo)
+        val viewModel = DaySkyViewModel(getSunAngle, locationRepo, sunRepo, FakeCloudRepositoryForDaySky())
+
+        delay(100)
+        assertEquals(false, viewModel.state.value.isInfoCardVisible)
+
+        viewModel.onToggleInfoCard()
+        assertEquals(true, viewModel.state.value.isInfoCardVisible)
+
+        viewModel.onToggleInfoCard()
+        assertEquals(false, viewModel.state.value.isInfoCardVisible)
+    }
+
+    @Test
+    fun testOnBackTapped_HidesInfoCardIfVisible() = runBlocking {
+        val locationRepo = FakeLocationRepositoryForDaySky()
+        val sunRepo = FakeSunRepositoryForDaySky()
+        val getSunAngle = GetSunAngle(locationRepo, sunRepo)
+        val viewModel = DaySkyViewModel(getSunAngle, locationRepo, sunRepo, FakeCloudRepositoryForDaySky())
+
+        delay(100)
+        viewModel.onToggleInfoCard()
+        assertEquals(true, viewModel.state.value.isInfoCardVisible)
+
+        viewModel.onBackTapped()
+        assertEquals(false, viewModel.state.value.isInfoCardVisible)
     }
 }

@@ -40,7 +40,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
@@ -57,6 +59,20 @@ import androidx.navigation.compose.rememberNavController
 import org.koin.compose.viewmodel.koinViewModel
 import ui.theme.LookUpTheme
 import ui.theme.AppThemeType
+import org.jetbrains.compose.resources.stringResource
+import org.jetbrains.compose.resources.painterResource
+import androidx.compose.animation.core.VectorConverter
+import androidx.compose.animation.core.animateValue
+import androidx.compose.animation.core.keyframes
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.ui.unit.Dp
+import shared.generated.resources.*
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.input.pointer.pointerInput
+import day.domain.CloudType
 import kotlin.math.cos
 import kotlin.math.sin
 
@@ -88,7 +104,7 @@ private fun CountdownClock(
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            text = if (isNight) "Sunrise at $eventTime" else "Sunset at $eventTime",
+            text = if (isNight) stringResource(Res.string.sunrise_at, eventTime) else stringResource(Res.string.sunset_at, eventTime),
             style = MaterialTheme.typography.headlineSmall.copy(
                 color = textColor.copy(alpha = 0.8f),
                 shadow = LookUpTheme.colors.textShadow
@@ -125,7 +141,9 @@ fun DaySkyScreenRoot(
                 },
                 onChangeLocationClick = {
                     viewModel.onChangeLocationClicked(onNavigateToWelcome)
-                }
+                },
+                onToggleInfoCard = viewModel::onToggleInfoCard,
+                onHideInfoCard = viewModel::onHideInfoCard
             )
 
             NavHost(
@@ -141,11 +159,61 @@ fun DaySkyScreenRoot(
                 }
             }
 
-            BackHandler(enabled = isExpanded) {
-                navController.popBackStack()
-                viewModel.onBackTapped()
+            BackHandler(enabled = isExpanded || state.isInfoCardVisible) {
+                if (state.isInfoCardVisible) {
+                    viewModel.onHideInfoCard()
+                } else if (isExpanded) {
+                    navController.popBackStack()
+                    viewModel.onBackTapped()
+                }
             }
         }
+    }
+}
+
+@Composable
+private fun CloudView(cloudTypes: List<CloudType>) {
+    val cloudType = cloudTypes.firstOrNull() ?: return
+    
+    val infiniteTransition = rememberInfiniteTransition(label = "cloudOffset")
+    val xOffset by infiniteTransition.animateValue(
+        initialValue = 0.dp,
+        targetValue = 0.dp,
+        typeConverter = Dp.VectorConverter,
+        animationSpec = infiniteRepeatable(
+            animation = keyframes {
+                durationMillis = 2000
+                0.dp at 0 with LinearEasing
+                (-4).dp at 500 with LinearEasing
+                (-4).dp at 1000 with LinearEasing
+                0.dp at 1500 with LinearEasing
+                0.dp at 2000 with LinearEasing
+            },
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "xOffset"
+    )
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 32.dp)
+            .offset(x = xOffset),
+        contentAlignment = Alignment.Center
+    ) {
+        val resource = when (cloudType) {
+            CloudType.CUMULUS -> Res.drawable.CUMULUS
+            CloudType.STRATUS -> Res.drawable.STRATUS
+            CloudType.CIRRUS -> Res.drawable.CIRRUS
+            CloudType.NIMBUS -> Res.drawable.NIMBUS
+        }
+        Image(
+            painter = painterResource(resource),
+            contentDescription = cloudType.name,
+            modifier = Modifier
+                .fillMaxWidth()
+                .aspectRatio(1.5f) // Adjust aspect ratio as needed to match your webp images
+        )
     }
 }
 
@@ -153,7 +221,9 @@ fun DaySkyScreenRoot(
 fun DaySkyScreen(
     state: DaySkyState,
     onSunClick: () -> Unit,
-    onChangeLocationClick: () -> Unit
+    onChangeLocationClick: () -> Unit,
+    onToggleInfoCard: () -> Unit,
+    onHideInfoCard: () -> Unit
 ) {
     val themeColors = LookUpTheme.colors
     val animatedSkyTop by animateColorAsState(
@@ -165,11 +235,29 @@ fun DaySkyScreen(
         animationSpec = tween(durationMillis = 600)
     )
 
-    Box(
+    BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
             .background(animatedSkyTop)
     ) {
+        val screenHeight = maxHeight
+        val cardHeight = screenHeight * 0.7f
+        
+        val infoCardOffset by animateDpAsState(
+            targetValue = if (state.isInfoCardVisible) 32.dp else cardHeight,
+            animationSpec = if (state.isExpanded) tween(0) else tween(durationMillis = 500)
+        )
+
+        val lastCountdownSeconds = remember { mutableStateOf<Long?>(null) }
+        val lastEventTime = remember { mutableStateOf<String?>(null) }
+        val lastIsBeforeSunrise = remember { mutableStateOf(false) }
+
+        if (state.countdownSeconds != null) {
+            lastCountdownSeconds.value = state.countdownSeconds
+            lastEventTime.value = state.eventTime
+            lastIsBeforeSunrise.value = state.isBeforeSunrise
+        }
+
         SunView(
             angleDeg = state.sunAngleDeg,
             color = themeColors.sunColor,
@@ -186,18 +274,9 @@ fun DaySkyScreen(
             exit = fadeOut(animationSpec = tween(500)) + slideOutVertically { it },
             modifier = Modifier.align(Alignment.Center)
         ) {
-            val cloudText = if (state.cloudTypes.isEmpty()) {
-                "NOTHING"
-            } else {
-                state.cloudTypes.joinToString(" & ") { it.name.lowercase().replaceFirstChar { c -> c.uppercase() } }
+            if (state.cloudTypes.isNotEmpty()) {
+                CloudView(cloudTypes = state.cloudTypes)
             }
-            Text(
-                text = cloudText,
-                style = MaterialTheme.typography.headlineMedium.copy(
-                    color = themeColors.textColor,
-                    shadow = themeColors.textShadow
-                )
-            )
         }
 
         AnimatedVisibility(
@@ -207,45 +286,165 @@ fun DaySkyScreen(
             modifier = Modifier.align(Alignment.Center)
         ) {
             CountdownClock(
-                seconds = state.countdownSeconds ?: 0,
-                eventTime = state.eventTime ?: "",
-                isNight = state.isBeforeSunrise,
-                textColor = if (state.isBeforeSunrise) Color.Black else Color.White
+                seconds = lastCountdownSeconds.value ?: 0,
+                eventTime = lastEventTime.value ?: "",
+                isNight = lastIsBeforeSunrise.value,
+                textColor = if (lastIsBeforeSunrise.value) Color.Black else Color.White
             )
         }
 
-        Column(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(bottom = 32.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+        // Location info
+        AnimatedVisibility(
+            visible = !state.isInfoCardVisible,
+            enter = fadeIn(),
+            exit = fadeOut(),
+            modifier = Modifier.align(Alignment.BottomCenter)
         ) {
-            state.location?.let {
-                Text(
-                    text = it.label,
-                    style = MaterialTheme.typography.headlineSmall.copy(
-                        color = themeColors.textColor,
-                        shadow = themeColors.textShadow
-                    )
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Surface(
-                    onClick = onChangeLocationClick,
-                    color = Color.Transparent,
-                    shape = RoundedCornerShape(24.dp),
-                    border = BorderStroke(1.dp, themeColors.textColor.copy(alpha = 0.5f))
-                ) {
+            Column(
+                modifier = Modifier
+                    .padding(bottom = 120.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                state.location?.let {
                     Text(
-                        text = "Change Location",
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                        style = MaterialTheme.typography.labelLarge.copy(
+                        text = it.label,
+                        style = MaterialTheme.typography.headlineSmall.copy(
                             color = themeColors.textColor,
                             shadow = themeColors.textShadow
                         )
                     )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Surface(
+                        onClick = onChangeLocationClick,
+                        color = Color.Transparent,
+                        shape = RoundedCornerShape(24.dp),
+                        border = BorderStroke(1.dp, themeColors.textColor.copy(alpha = 0.5f))
+                    ) {
+                        Text(
+                            text = stringResource(Res.string.change_location),
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                            style = MaterialTheme.typography.labelLarge.copy(
+                                color = themeColors.textColor,
+                                shadow = themeColors.textShadow
+                            )
+                        )
+                    }
                 }
+            }
+        }
+
+        // Info Button and Card
+        val showInfoButton = !(state.isExpanded && state.countdownSeconds != null) && !state.isLoading && state.cloudTypes.isNotEmpty()
+        
+        if (showInfoButton || state.isInfoCardVisible) {
+            Column(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .offset(y = infoCardOffset)
+                    .padding(bottom = 32.dp)
+                    .fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                // The Button
+                Surface(
+                    onClick = onToggleInfoCard,
+                    modifier = Modifier
+                        .padding(bottom = 16.dp)
+                        .size(56.dp),
+                    shape = CircleShape,
+                    color = themeColors.skyBottom.copy(alpha = 0.9f),
+                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.5f)),
+                    shadowElevation = 8.dp
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Text(
+                            text = if (state.isInfoCardVisible) "✕" else "i",
+                            style = MaterialTheme.typography.titleLarge.copy(color = themeColors.textColor)
+                        )
+                    }
+                }
+                
+                // The Card
+                if (state.cloudTypes.isNotEmpty()) {
+                    InfoCard(
+                        cloudType = state.cloudTypes.first(),
+                        onClose = onHideInfoCard,
+                        modifier = Modifier.height(cardHeight)
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun InfoCard(
+    cloudType: CloudType,
+    onClose: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val themeColors = LookUpTheme.colors
+    val description = when (cloudType) {
+        CloudType.CUMULUS -> stringResource(Res.string.cloud_cumulus_desc)
+        CloudType.STRATUS -> stringResource(Res.string.cloud_stratus_desc)
+        CloudType.CIRRUS -> stringResource(Res.string.cloud_cirrus_desc)
+        CloudType.NIMBUS -> stringResource(Res.string.cloud_nimbus_desc)
+    }
+
+    Surface(
+        modifier = modifier
+            .fillMaxWidth()
+            .pointerInput(Unit) {
+                detectVerticalDragGestures { _, dragAmount ->
+                    if (dragAmount > 20) { // Sliding down
+                        onClose()
+                    }
+                }
+            },
+        shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp),
+        color = themeColors.skyBottom.copy(alpha = 1.0f),
+        contentColor = themeColors.textColor,
+        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.5f)),
+        shadowElevation = 16.dp
+    ) {
+        Column(
+            modifier = Modifier
+                .padding(horizontal = 32.dp, vertical = 16.dp)
+                .fillMaxSize()
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(width = 40.dp, height = 4.dp)
+                    .background(themeColors.textColor.copy(alpha = 0.3f), CircleShape)
+                    .align(Alignment.CenterHorizontally)
+            )
+            
+            Spacer(modifier = Modifier.height(24.dp))
+            
+            Text(
+                text = cloudType.name,
+                modifier = Modifier.align(Alignment.CenterHorizontally),
+                style = MaterialTheme.typography.headlineMedium.copy(
+                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                    shadow = themeColors.textShadow
+                )
+            )
+            
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            Column(
+                modifier = Modifier
+                    .verticalScroll(rememberScrollState())
+                    .padding(bottom = 24.dp)
+            ) {
+                Text(
+                    text = description,
+                    style = MaterialTheme.typography.bodyLarge.copy(
+                        shadow = themeColors.textShadow
+                    )
+                )
             }
         }
     }

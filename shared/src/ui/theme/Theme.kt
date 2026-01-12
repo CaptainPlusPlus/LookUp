@@ -50,8 +50,8 @@ fun LookUpTheme(
             textColor = Color.White,
             textShadow = Shadow(
                 color = DayTextShadow,
-                offset = Offset(2f, 2f),
-                blurRadius = 4f
+                offset = Offset(1f, 1f),
+                blurRadius = 1f
             ),
             accentColor = Color(0xFF4682B4) // SteelBlue for accent in Day theme
         )

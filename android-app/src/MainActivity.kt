@@ -1,4 +1,4 @@
-package hello.world
+package org.cptn.lookup
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity

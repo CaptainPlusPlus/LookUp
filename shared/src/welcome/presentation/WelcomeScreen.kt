@@ -25,7 +25,14 @@ import ui.theme.AppThemeType
 import ui.theme.LookUpYellow
 import ui.theme.LookUpWhite
 
+import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
+import shared.generated.resources.Res
+import shared.generated.resources.pick_city
+import shared.generated.resources.use_location
+import shared.generated.resources.welcome_subtitle
+import shared.generated.resources.welcome_title
+
 // Use literal strings for now to avoid build issues with generated resources in this environment
 
 @Composable
@@ -61,7 +68,9 @@ fun WelcomeScreenRoot(
         day.presentation.DaySkyScreen(
             state = day.presentation.DaySkyState(isLoading = true),
             onSunClick = {},
-            onChangeLocationClick = {}
+            onChangeLocationClick = {},
+            onToggleInfoCard = {},
+            onHideInfoCard = {}
         )
     }
 }
@@ -96,7 +105,7 @@ fun WelcomeScreen(
                 verticalArrangement = Arrangement.Center
             ) {
                 Text(
-                    text = "LookUp!",
+                    text = stringResource(Res.string.welcome_title),
                     style = MaterialTheme.typography.displayLarge.copy(
                         brush = Brush.linearGradient(
                             colors = listOf(LookUpYellow, LookUpWhite)
@@ -108,7 +117,7 @@ fun WelcomeScreen(
                 Spacer(modifier = Modifier.height(24.dp))
 
                 Text(
-                    text = "Look up ☝\uFE0F\uD83D\uDD0D\uD83D\uDC40 a place to look up!",
+                    text = stringResource(Res.string.welcome_subtitle),
                     style = MaterialTheme.typography.bodyLarge.copy(
                         color = themeColors.textColor,
                         shadow = themeColors.textShadow
@@ -121,7 +130,7 @@ fun WelcomeScreen(
                         OutlinedTextField(
                             value = state.searchQuery,
                             onValueChange = onSearchQueryChanged,
-                            label = { Text("Pick city") },
+                            label = { Text(stringResource(resource = Res.string.pick_city)) },
                             modifier = Modifier.fillMaxWidth(),
                             textStyle = TextStyle(
                                 color = themeColors.textColor,
@@ -188,7 +197,7 @@ fun WelcomeScreen(
                     )
                 ) {
                     Text(
-                        "Use device location",
+                        stringResource(Res.string.use_location),
                         color = Color.White,
                         style = TextStyle(shadow = themeColors.textShadow)
                     )

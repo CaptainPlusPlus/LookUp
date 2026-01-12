@@ -6,7 +6,7 @@ import androidx.compose.ui.graphics.Color
 val DaySkyTop = Color(0xFF87CEEB)
 val DaySkyBottom = Color(0xFFE0F7FA)
 val SunYellow = Color(0xFFFFA500)
-val DayTextShadow = Color(0x80000000)
+val DayTextShadow = Color.Black
 
 // Golden Hour Colors
 val GoldenSkyTop = Color(0xFFFFB347)

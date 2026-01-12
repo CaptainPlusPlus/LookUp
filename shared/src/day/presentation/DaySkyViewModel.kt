@@ -36,6 +36,7 @@ data class DaySkyState(
     val isBeforeSunset: Boolean = false,
     val isBeforeSunrise: Boolean = false,
     val cloudTypes: List<day.domain.CloudType> = emptyList(),
+    val isInfoCardVisible: Boolean = false,
 )
 
 class DaySkyViewModel(
@@ -61,13 +62,25 @@ class DaySkyViewModel(
     }
 
     fun onSunTapped() {
-        _state.update { it.copy(isExpanded = true) }
+        _state.update { it.copy(isExpanded = true, isInfoCardVisible = false) }
         startCountdown()
     }
 
     fun onBackTapped() {
+        if (_state.value.isInfoCardVisible) {
+            _state.update { it.copy(isInfoCardVisible = false) }
+            return
+        }
         _state.update { it.copy(isExpanded = false) }
         stopCountdown()
+    }
+
+    fun onToggleInfoCard() {
+        _state.update { it.copy(isInfoCardVisible = !it.isInfoCardVisible) }
+    }
+
+    fun onHideInfoCard() {
+        _state.update { it.copy(isInfoCardVisible = false) }
     }
 
     private fun startCountdown() {

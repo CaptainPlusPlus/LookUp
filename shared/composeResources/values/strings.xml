@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">LookUp!</string>
+    <string name="welcome_title">LookUp!</string>
+    <string name="pick_city">Pick place</string>
+    <string name="use_location">Use device location</string>
+    <string name="search_city_hint">Type the name of a place...</string>
+    <string name="error_location">Failed to get location</string>
+    <string name="error_device_location">Could not get device location</string>
+    <string name="current_location">Current Location</string>
+    <string name="loading">Loading...</string>
+    <string name="edit_location">Edit location</string>
+    <string name="change_location">Change Location</string>
+    <string name="prompt_pick_city">Please pick a location to start looking up!</string>
+    <string name="cancel">Cancel</string>
+    <string name="permission_denied">Location permission denied</string>
+    <string name="welcome_subtitle">Look up ☝️🔍👀 a place to look up!</string>
+    <string name="nothing_clouds"></string>
+    <string name="cloud_cumulus_desc">Cumulus clouds are the big, white, fluffy ones that look like cotton candy or popcorn floating in the sky. They usually show up on sunny days and have flat bottoms and rounded tops, making them perfect for spotting shapes!\n\nThese clouds are formed when warm air rises and cools down, turning into tiny water droplets. Even though they look soft and light, a single cumulus cloud can weigh as much as 100 elephants!\n\nNext time you see a cumulus cloud, look closely at its shape. Sometimes they grow tall like giant towers or mountains—these are called towering cumulus. If they keep growing, they might even turn into storm clouds, but most of the time, they just drift by lazily, making the sky look like a big blue ocean with white islands.</string>
+    <string name="cloud_stratus_desc">Stratus clouds look like a huge, flat grey blanket that covers the whole sky. They usually hang low and can make the day feel a bit gloomy, sometimes bringing a light drizzle or mist along with them.\n\nYou can think of stratus clouds as fog that just hasn't touched the ground yet. They form when a large mass of moist air is lifted up slowly, spreading out evenly across the horizon like a giant sheet.\n\nBecause they cover so much of the sky, stratus clouds are like a giant sunscreen for the Earth. They reflect a lot of the sun\'s heat back into space, which helps keep us cool on hot days. They might not be the most exciting clouds to look at, but they play a very important role in keeping our planet\'s temperature just right.</string>
+    <string name="cloud_cirrus_desc">Cirrus clouds are very high up in the sky and look like thin, wispy white feathers or locks of hair. Because they are so high where it's super cold, they aren't made of water drops like other clouds, but tiny ice crystals instead!\n\nThese delicate clouds often mean that the weather is about to change in a day or two. Pilots love them because they are beautiful, but they can also indicate strong winds high up in the atmosphere called the jet stream.\n\nIf you watch cirrus clouds over a few hours, you might notice they seem to move very fast. That\'s because they are caught in high-speed winds way up where planes fly. Even though they look like they are standing still, they can actually be racing across the sky at over 100 miles per hour!</string>
+    <string name="cloud_nimbus_desc">Nimbus clouds are the dark, heavy clouds that tell you it's time to grab your umbrella! They are full of water and usually mean that rain, snow, or even a thunderstorm is on the way.\n\nThe word "nimbus" actually means "rain" in Latin. These clouds are very thick and block out most of the sunlight, which is why they look so dark and grey from down here on the ground.\n\nWhile they might look a bit scary, nimbus clouds are actually very helpful! They bring the water that plants, trees, and animals need to grow. Without these rain-carrying clouds, our world wouldn\'t be nearly as green and full of life as it is today. So, instead of being sad when you see them, think of them as the sky\'s way of giving the Earth a big, refreshing drink.</string>
+    <string name="sunrise_at">Sunrise at %1$s, in your clock</string>
+    <string name="sunset_at">Sunset at %1$s, in your clock</string>
+</resources>
