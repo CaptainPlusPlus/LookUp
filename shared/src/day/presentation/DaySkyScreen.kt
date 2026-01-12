@@ -65,8 +65,9 @@ fun DaySkyScreenRoot(
     val currentRoute = navBackStackEntry?.destination?.route
 
     val isExpanded = currentRoute == DaySkyRoute.GoldenHour.route
+    val themeType = if (isExpanded) AppThemeType.GOLDEN_HOUR else state.themeType
 
-    LookUpTheme(themeType = state.themeType) {
+    LookUpTheme(themeType = themeType) {
         Box(modifier = Modifier.fillMaxSize()) {
             DaySkyScreen(
                 state = state.copy(isExpanded = isExpanded),
@@ -112,20 +113,19 @@ fun DaySkyScreen(
     onChangeLocationClick: () -> Unit
 ) {
     val themeColors = LookUpTheme.colors
-    val skyColor by animateColorAsState(
-        targetValue = themeColors.skyBottom, // Use bottom color as representative or keep logic? 
-        // Actually, we should probably use a gradient here too.
+    val animatedSkyTop by animateColorAsState(
+        targetValue = themeColors.skyTop,
+        animationSpec = tween(durationMillis = 600)
+    )
+    val animatedSkyBottom by animateColorAsState(
+        targetValue = themeColors.skyBottom,
         animationSpec = tween(durationMillis = 600)
     )
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(
-                brush = Brush.verticalGradient(
-                    colors = listOf(themeColors.skyTop, themeColors.skyBottom)
-                )
-            )
+            .background(animatedSkyTop)
     ) {
         SunView(
             angleDeg = state.sunAngleDeg,
