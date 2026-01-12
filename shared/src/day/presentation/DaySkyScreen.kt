@@ -26,31 +26,59 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.rememberNavController
 import org.koin.compose.viewmodel.koinViewModel
 import kotlin.math.cos
 import kotlin.math.sin
 
+sealed class DaySkyRoute(val route: String) {
+    object BlueSky : DaySkyRoute("blue_sky")
+    object GoldenHour : DaySkyRoute("golden_hour")
+}
+
 @Composable
 fun DaySkyScreenRoot(
     viewModel: DaySkyViewModel = koinViewModel(),
-    onSunClick: () -> Unit,
 ) {
     val state by viewModel.state.collectAsState()
+    val navController = rememberNavController()
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route
+
+    val isExpanded = currentRoute == DaySkyRoute.GoldenHour.route
 
     Box(modifier = Modifier.fillMaxSize()) {
         DaySkyScreen(
-            state = state,
+            state = state.copy(isExpanded = isExpanded),
             onSunClick = {
-                if (state.isExpanded) {
+                if (isExpanded) {
+                    navController.popBackStack()
                     viewModel.onBackTapped()
                 } else {
+                    navController.navigate(DaySkyRoute.GoldenHour.route)
                     viewModel.onSunTapped()
-                    onSunClick()
                 }
             },
         )
 
-        BackHandler(enabled = state.isExpanded) {
+        NavHost(
+            navController = navController,
+            startDestination = DaySkyRoute.BlueSky.route,
+            modifier = Modifier.fillMaxSize()
+        ) {
+            composable(DaySkyRoute.BlueSky.route) {
+                // Future blue sky specific content
+            }
+            composable(DaySkyRoute.GoldenHour.route) {
+                // Future golden hour specific content
+            }
+        }
+
+        BackHandler(enabled = isExpanded) {
+            navController.popBackStack()
             viewModel.onBackTapped()
         }
     }

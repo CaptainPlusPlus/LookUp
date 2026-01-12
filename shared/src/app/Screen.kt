@@ -6,10 +6,6 @@ import day.presentation.DaySkyScreenRoot
 @Composable
 fun Screen() {
     MaterialTheme {
-        DaySkyScreenRoot(
-            onSunClick = {
-                // Handle sun click if needed
-            }
-        )
+        DaySkyScreenRoot()
     }
 }
