@@ -10,4 +10,8 @@ interface LocationRepository {
     suspend fun resolveActivePoint(): GeoPoint
 
     suspend fun getActiveLabel(): String
+
+    suspend fun saveLocation(label: String, point: GeoPoint, isCurrent: Boolean)
+
+    suspend fun hasLocation(): Boolean
 }

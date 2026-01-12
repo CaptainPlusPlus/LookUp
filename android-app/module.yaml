@@ -3,7 +3,7 @@ product: android/app
 dependencies:
   - ../shared
   - androidx.activity:activity-compose:1.10.1
-#  - io.insert-koin:koin-android:4.1.1
+  - io.insert-koin:koin-android:4.1.1
   - io.insert-koin:koin-test:4.1.1
   - io.insert-koin:koin-compose:4.1.1
 
