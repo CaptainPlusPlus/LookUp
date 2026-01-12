@@ -3,16 +3,28 @@ package day.presentation
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
@@ -25,12 +37,15 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import org.koin.compose.viewmodel.koinViewModel
+import ui.theme.LookUpTheme
+import ui.theme.AppThemeType
 import kotlin.math.cos
 import kotlin.math.sin
 
@@ -42,6 +57,7 @@ sealed class DaySkyRoute(val route: String) {
 @Composable
 fun DaySkyScreenRoot(
     viewModel: DaySkyViewModel = koinViewModel(),
+    onNavigateToWelcome: () -> Unit
 ) {
     val state by viewModel.state.collectAsState()
     val navController = rememberNavController()
@@ -50,36 +66,41 @@ fun DaySkyScreenRoot(
 
     val isExpanded = currentRoute == DaySkyRoute.GoldenHour.route
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        DaySkyScreen(
-            state = state.copy(isExpanded = isExpanded),
-            onSunClick = {
-                if (isExpanded) {
-                    navController.popBackStack()
-                    viewModel.onBackTapped()
-                } else {
-                    navController.navigate(DaySkyRoute.GoldenHour.route)
-                    viewModel.onSunTapped()
+    LookUpTheme(themeType = state.themeType) {
+        Box(modifier = Modifier.fillMaxSize()) {
+            DaySkyScreen(
+                state = state.copy(isExpanded = isExpanded),
+                onSunClick = {
+                    if (isExpanded) {
+                        navController.popBackStack()
+                        viewModel.onBackTapped()
+                    } else {
+                        navController.navigate(DaySkyRoute.GoldenHour.route)
+                        viewModel.onSunTapped()
+                    }
+                },
+                onChangeLocationClick = {
+                    viewModel.onChangeLocationClicked(onNavigateToWelcome)
                 }
-            },
-        )
+            )
 
-        NavHost(
-            navController = navController,
-            startDestination = DaySkyRoute.BlueSky.route,
-            modifier = Modifier.fillMaxSize()
-        ) {
-            composable(DaySkyRoute.BlueSky.route) {
-                // Future blue sky specific content
+            NavHost(
+                navController = navController,
+                startDestination = DaySkyRoute.BlueSky.route,
+                modifier = Modifier.fillMaxSize()
+            ) {
+                composable(DaySkyRoute.BlueSky.route) {
+                    // Future blue sky specific content
+                }
+                composable(DaySkyRoute.GoldenHour.route) {
+                    // Future golden hour specific content
+                }
             }
-            composable(DaySkyRoute.GoldenHour.route) {
-                // Future golden hour specific content
-            }
-        }
 
-        BackHandler(enabled = isExpanded) {
-            navController.popBackStack()
-            viewModel.onBackTapped()
+            BackHandler(enabled = isExpanded) {
+                navController.popBackStack()
+                viewModel.onBackTapped()
+            }
         }
     }
 }
@@ -88,24 +109,65 @@ fun DaySkyScreenRoot(
 fun DaySkyScreen(
     state: DaySkyState,
     onSunClick: () -> Unit,
+    onChangeLocationClick: () -> Unit
 ) {
+    val themeColors = LookUpTheme.colors
     val skyColor by animateColorAsState(
-        targetValue = if (state.isExpanded) Color(0xFFFF7077) else Color(0xFF87CEEB), // Golden hour pink vs Teal/Light Blue
+        targetValue = themeColors.skyBottom, // Use bottom color as representative or keep logic? 
+        // Actually, we should probably use a gradient here too.
         animationSpec = tween(durationMillis = 600)
     )
-    val sunColor = Color(0xFFFFA500)
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(skyColor)
+            .background(
+                brush = Brush.verticalGradient(
+                    colors = listOf(themeColors.skyTop, themeColors.skyBottom)
+                )
+            )
     ) {
         SunView(
             angleDeg = state.sunAngleDeg,
-            color = sunColor,
+            color = themeColors.sunColor,
             isExpanded = state.isExpanded,
             onClick = onSunClick
         )
+
+        Column(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 32.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            state.location?.let {
+                Text(
+                    text = it.label,
+                    style = MaterialTheme.typography.headlineSmall.copy(
+                        color = themeColors.textColor,
+                        shadow = themeColors.textShadow
+                    )
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Surface(
+                    onClick = onChangeLocationClick,
+                    color = Color.Transparent,
+                    shape = RoundedCornerShape(24.dp),
+                    border = BorderStroke(1.dp, themeColors.textColor.copy(alpha = 0.5f))
+                ) {
+                    Text(
+                        text = "Change Location",
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                        style = MaterialTheme.typography.labelLarge.copy(
+                            color = themeColors.textColor,
+                            shadow = themeColors.textShadow
+                        )
+                    )
+                }
+            }
+        }
     }
 }
 

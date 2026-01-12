@@ -8,6 +8,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import ui.theme.AppThemeType
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -24,6 +25,7 @@ data class DaySkyState(
     val isLoading: Boolean = false,
     val error: String? = null,
     val isExpanded: Boolean = false,
+    val themeType: AppThemeType = AppThemeType.DAY,
 )
 
 class DaySkyViewModel(
@@ -53,6 +55,13 @@ class DaySkyViewModel(
         _state.update { it.copy(isExpanded = false) }
     }
 
+    fun onChangeLocationClicked(onNavToWelcome: () -> Unit) {
+        viewModelScope.launch {
+            locationRepo.clearLocation()
+            onNavToWelcome()
+        }
+    }
+
     fun refresh() {
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true) }
@@ -62,12 +71,18 @@ class DaySkyViewModel(
                 val angle = getSunAngleNow()
                 UiLocation(label, point.latitudeDeg, point.longitudeDeg) to angle
             }.onSuccess { (uiLocation, angle) ->
+                val themeType = when {
+                    angle < 15f || angle > 165f -> AppThemeType.NIGHT
+                    (angle in 15f..35f) || (angle in 145f..165f) -> AppThemeType.GOLDEN_HOUR
+                    else -> AppThemeType.DAY
+                }
                 _state.update {
                     it.copy(
                         sunAngleDeg = angle,
                         location = uiLocation,
                         isLoading = false,
                         error = null,
+                        themeType = themeType
                     )
                 }
             }.onFailure { t ->

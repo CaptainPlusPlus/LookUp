@@ -14,4 +14,6 @@ interface LocationRepository {
     suspend fun saveLocation(label: String, point: GeoPoint, isCurrent: Boolean)
 
     suspend fun hasLocation(): Boolean
+    
+    suspend fun clearLocation()
 }
