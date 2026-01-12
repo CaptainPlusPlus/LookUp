@@ -1,7 +1,13 @@
 package day.presentation
 
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateOffsetAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -131,6 +137,7 @@ fun DaySkyScreen(
             angleDeg = state.sunAngleDeg,
             color = themeColors.sunColor,
             isExpanded = state.isExpanded,
+            isLoading = state.isLoading || state.location == null,
             onClick = onSunClick
         )
 
@@ -176,6 +183,7 @@ private fun SunView(
     angleDeg: Float,
     color: Color,
     isExpanded: Boolean,
+    isLoading: Boolean,
     onClick: () -> Unit
 ) {
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
@@ -183,22 +191,31 @@ private fun SunView(
         val height = maxHeight
         val density = LocalDensity.current.density
 
-        val sunCenter by remember(width, height, angleDeg, density) {
+        val targetSunCenter by remember(width, height, angleDeg, isLoading) {
             derivedStateOf {
-                val verticalBound = height * (2f / 5f)
-                val radiusX = width / 2f
-                val radiusY = verticalBound * 0.8f
+                if (isLoading) {
+                    Offset(width.value / 2f, height.value / 2f)
+                } else {
+                    val verticalBound = height * (2f / 5f)
+                    val radiusX = width / 2f
+                    val radiusY = verticalBound * 0.8f
 
-                val angleRad = (angleDeg * kotlin.math.PI / 180.0).toFloat()
+                    val angleRad = (angleDeg * kotlin.math.PI / 180.0).toFloat()
 
-                val xOffsetFromCenter = (radiusX.value * cos(angleRad))
-                val yOffsetFromCenter = (radiusY.value * sin(angleRad))
+                    val xOffsetFromCenter = (radiusX.value * cos(angleRad))
+                    val yOffsetFromCenter = (radiusY.value * sin(angleRad))
 
-                val x = (width.value / 2f) + xOffsetFromCenter
-                val y = (verticalBound.value) - yOffsetFromCenter
-                Offset(x, y)
+                    val x = (width.value / 2f) + xOffsetFromCenter
+                    val y = (verticalBound.value) - yOffsetFromCenter
+                    Offset(x, y)
+                }
             }
         }
+
+        val sunCenter by animateOffsetAsState(
+            targetValue = targetSunCenter,
+            animationSpec = tween(durationMillis = 1000)
+        )
 
         val sunCenterX = sunCenter.x
         val sunCenterY = sunCenter.y
@@ -232,6 +249,7 @@ private fun SunView(
             color = color,
             density = density,
             isExpanded = isExpanded,
+            isLoading = isLoading,
             onClick = onClick
         )
     }
@@ -244,13 +262,25 @@ private fun SunBody(
     color: Color,
     density: Float,
     isExpanded: Boolean,
+    isLoading: Boolean,
     onClick: () -> Unit
 ) {
     val sunSize = 90.dp
-    val targetSunbeamSize = if (isExpanded) sunSize * 20f else sunSize * 1.5f
+    
+    val infiniteTransition = rememberInfiniteTransition()
+    val pulseScale by infiniteTransition.animateFloat(
+        initialValue = 1.5f,
+        targetValue = 3f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1500, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        )
+    )
+
+    val targetSunbeamSize = if (isExpanded) sunSize * 20f else if (isLoading) sunSize * pulseScale else sunSize * 1.5f
     val sunbeamSize by animateDpAsState(
         targetValue = targetSunbeamSize,
-        animationSpec = tween(durationMillis = 1000)
+        animationSpec = if (isLoading) tween(0) else tween(durationMillis = 1000)
     )
 
     Box(

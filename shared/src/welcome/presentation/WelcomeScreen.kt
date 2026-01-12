@@ -56,6 +56,14 @@ fun WelcomeScreenRoot(
         onCitySelected = viewModel::onCitySelected,
         onUseLocationClicked = viewModel::onUseLocationClicked
     )
+
+    if (state.isSearching && state.isLocationObtained) {
+        day.presentation.DaySkyScreen(
+            state = day.presentation.DaySkyState(isLoading = true),
+            onSunClick = {},
+            onChangeLocationClick = {}
+        )
+    }
 }
 
 @Composable
@@ -100,7 +108,7 @@ fun WelcomeScreen(
                 Spacer(modifier = Modifier.height(24.dp))
 
                 Text(
-                    text = "Please pick a city to start looking up!", // Using hardcoded string for now as per environment constraints
+                    text = "Look up ☝\uFE0F\uD83D\uDD0D\uD83D\uDC40 a place to look up!",
                     style = MaterialTheme.typography.bodyLarge.copy(
                         color = themeColors.textColor,
                         shadow = themeColors.textShadow
@@ -180,7 +188,7 @@ fun WelcomeScreen(
                     )
                 ) {
                     Text(
-                        "Use location",
+                        "Use device location",
                         color = Color.White,
                         style = TextStyle(shadow = themeColors.textShadow)
                     )

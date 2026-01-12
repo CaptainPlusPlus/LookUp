@@ -7,6 +7,7 @@ import day.domain.CitySearchResult
 import day.domain.DeviceLocationRepository
 import day.domain.LocationRepository
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
@@ -54,12 +55,15 @@ class WelcomeViewModel(
 
     fun onCitySelected(city: CitySearchResult) {
         viewModelScope.launch {
+            _state.update { it.copy(isSearching = true) }
+            // Artificial delay to show the loading state if it's too fast
+            delay(500)
             locationRepo.saveLocation(
                 label = city.label,
                 point = city.point,
                 isCurrent = true
             )
-            _state.update { it.copy(isLocationObtained = true) }
+            _state.update { it.copy(isLocationObtained = true, isSearching = false) }
         }
     }
 
@@ -67,6 +71,8 @@ class WelcomeViewModel(
         viewModelScope.launch {
             _state.update { it.copy(isSearching = true, error = null) }
             val location = deviceLocationRepo.getCurrentLocation()
+            // Artificial delay
+            delay(500)
             if (location != null) {
                 locationRepo.saveLocation(
                     label = "Current Location",

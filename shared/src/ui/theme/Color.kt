@@ -20,5 +20,5 @@ val NightSkyBottom = Color(0xFF2C5364)
 val NightText = Color.White
 
 // LookUp Title Gradients
-val LookUpYellow = Color.Yellow
+val LookUpYellow = Color(0xFFFA7814)
 val LookUpWhite = Color.White
