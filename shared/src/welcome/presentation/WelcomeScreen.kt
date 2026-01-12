@@ -70,7 +70,8 @@ fun WelcomeScreenRoot(
             onSunClick = {},
             onChangeLocationClick = {},
             onToggleInfoCard = {},
-            onHideInfoCard = {}
+            onHideInfoCard = {},
+            onStarClick = {}
         )
     }
 }

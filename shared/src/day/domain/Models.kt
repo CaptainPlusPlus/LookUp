@@ -21,6 +21,8 @@ sealed interface LocationChoice {
 
 enum class CloudType { CUMULUS, STRATUS, CIRRUS, NIMBUS }
 
+enum class StarType { CAPELLA, CASTOR, SIRIUS, RIGEL }
+
 data class InputsUsed(val cloudCover: Int, val weatherCode: Int?)
 
 data class CloudResult(val types: List<CloudType>, val inputs: InputsUsed)

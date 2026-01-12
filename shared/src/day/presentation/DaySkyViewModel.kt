@@ -37,7 +37,13 @@ data class DaySkyState(
     val isBeforeSunrise: Boolean = false,
     val cloudTypes: List<day.domain.CloudType> = emptyList(),
     val isInfoCardVisible: Boolean = false,
+    val selectedInfo: InfoContent? = null,
 )
+
+sealed interface InfoContent {
+    data class Cloud(val type: day.domain.CloudType) : InfoContent
+    data class Star(val type: day.domain.StarType) : InfoContent
+}
 
 class DaySkyViewModel(
     private val getSunAngleNow: GetSunAngle,
@@ -76,11 +82,21 @@ class DaySkyViewModel(
     }
 
     fun onToggleInfoCard() {
-        _state.update { it.copy(isInfoCardVisible = !it.isInfoCardVisible) }
+        _state.update { 
+            val isVisible = !it.isInfoCardVisible
+            it.copy(
+                isInfoCardVisible = isVisible,
+                selectedInfo = if (isVisible) it.cloudTypes.firstOrNull()?.let { type -> InfoContent.Cloud(type) } else it.selectedInfo
+            )
+        }
     }
 
     fun onHideInfoCard() {
         _state.update { it.copy(isInfoCardVisible = false) }
+    }
+
+    fun onStarTapped(starType: day.domain.StarType) {
+        _state.update { it.copy(isInfoCardVisible = true, selectedInfo = InfoContent.Star(starType)) }
     }
 
     private fun startCountdown() {

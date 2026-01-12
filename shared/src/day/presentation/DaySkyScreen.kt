@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -72,7 +73,11 @@ import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.animation.core.StartOffset
 import day.domain.CloudType
+import day.domain.StarType
+import day.presentation.InfoContent
 import kotlin.math.cos
 import kotlin.math.sin
 
@@ -143,7 +148,8 @@ fun DaySkyScreenRoot(
                     viewModel.onChangeLocationClicked(onNavigateToWelcome)
                 },
                 onToggleInfoCard = viewModel::onToggleInfoCard,
-                onHideInfoCard = viewModel::onHideInfoCard
+                onHideInfoCard = viewModel::onHideInfoCard,
+                onStarClick = viewModel::onStarTapped
             )
 
             NavHost(
@@ -172,6 +178,47 @@ fun DaySkyScreenRoot(
 }
 
 @Composable
+private fun StarView(
+    starType: StarType,
+    onClick: () -> Unit
+) {
+    val infiniteTransition = rememberInfiniteTransition(label = starType.name)
+    val randomDelay = remember { (0..2000).random() }
+
+    val opacity by infiniteTransition.animateFloat(
+        initialValue = 1.0f,
+        targetValue = 0.4f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1000, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse,
+            initialStartOffset = StartOffset(randomDelay)
+        ),
+        label = "opacity"
+    )
+
+    val resource = when (starType) {
+        StarType.CAPELLA -> Res.drawable.CAPELLA
+        StarType.CASTOR -> Res.drawable.CASTOR
+        StarType.SIRIUS -> Res.drawable.SIRIUS
+        StarType.RIGEL -> Res.drawable.RIGEL
+    }
+
+    Image(
+        painter = painterResource(resource),
+        contentDescription = starType.name,
+        modifier = Modifier
+            .fillMaxWidth()
+            .aspectRatio(1f)
+            .graphicsLayer(alpha = opacity)
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                onClick = onClick
+            )
+    )
+}
+
+@Composable
 private fun CloudView(cloudTypes: List<CloudType>) {
     val cloudType = cloudTypes.firstOrNull() ?: return
     
@@ -197,7 +244,7 @@ private fun CloudView(cloudTypes: List<CloudType>) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 32.dp)
+            .padding(horizontal = 8.dp)
             .offset(x = xOffset),
         contentAlignment = Alignment.Center
     ) {
@@ -223,7 +270,8 @@ fun DaySkyScreen(
     onSunClick: () -> Unit,
     onChangeLocationClick: () -> Unit,
     onToggleInfoCard: () -> Unit,
-    onHideInfoCard: () -> Unit
+    onHideInfoCard: () -> Unit,
+    onStarClick: (StarType) -> Unit
 ) {
     val themeColors = LookUpTheme.colors
     val animatedSkyTop by animateColorAsState(
@@ -246,6 +294,25 @@ fun DaySkyScreen(
         val infoCardOffset by animateDpAsState(
             targetValue = if (state.isInfoCardVisible) 32.dp else cardHeight,
             animationSpec = if (state.isExpanded) tween(0) else tween(durationMillis = 500)
+        )
+
+        val hoverTransition = rememberInfiniteTransition(label = "cloudHover")
+        val hoverOffset by hoverTransition.animateValue(
+            initialValue = 0.dp,
+            targetValue = 0.dp,
+            typeConverter = Dp.VectorConverter,
+            animationSpec = infiniteRepeatable(
+                animation = keyframes {
+                    durationMillis = 1000
+                    0.dp at 0 with LinearEasing
+                    (-2).dp at 250 with LinearEasing
+                    (-4).dp at 500 with LinearEasing
+                    (-2).dp at 750 with LinearEasing
+                    0.dp at 1000 with LinearEasing
+                },
+                repeatMode = RepeatMode.Restart
+            ),
+            label = "hoverOffset"
         )
 
         val lastCountdownSeconds = remember { mutableStateOf<Long?>(null) }
@@ -274,8 +341,36 @@ fun DaySkyScreen(
             exit = fadeOut(animationSpec = tween(500)) + slideOutVertically { it },
             modifier = Modifier.align(Alignment.Center)
         ) {
-            if (state.cloudTypes.isNotEmpty()) {
-                CloudView(cloudTypes = state.cloudTypes)
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center,
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
+            ) {
+                if (LookUpTheme.themeType == AppThemeType.NIGHT) {
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        StarView(StarType.CAPELLA, onClick = { onStarClick(StarType.CAPELLA) })
+                        StarView(StarType.CASTOR, onClick = { onStarClick(StarType.CASTOR) })
+                    }
+                }
+
+                Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
+                    if (state.cloudTypes.isNotEmpty()) {
+                        CloudView(cloudTypes = state.cloudTypes)
+                    }
+                }
+
+                if (LookUpTheme.themeType == AppThemeType.NIGHT) {
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        StarView(StarType.SIRIUS, onClick = { onStarClick(StarType.SIRIUS) })
+                        StarView(StarType.RIGEL, onClick = { onStarClick(StarType.RIGEL) })
+                    }
+                }
             }
         }
 
@@ -347,29 +442,25 @@ fun DaySkyScreen(
                     .fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // The Button
-                Surface(
-                    onClick = onToggleInfoCard,
+                // The Cloud Button
+                Image(
+                    painter = painterResource(Res.drawable.CLOUD),
+                    contentDescription = "Toggle Info",
                     modifier = Modifier
                         .padding(bottom = 16.dp)
-                        .size(56.dp),
-                    shape = CircleShape,
-                    color = themeColors.skyBottom.copy(alpha = 0.9f),
-                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.5f)),
-                    shadowElevation = 8.dp
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Text(
-                            text = if (state.isInfoCardVisible) "✕" else "i",
-                            style = MaterialTheme.typography.titleLarge.copy(color = themeColors.textColor)
+                        .size(84.dp)
+                        .offset(y = hoverOffset)
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
+                            onClick = onToggleInfoCard
                         )
-                    }
-                }
+                )
                 
                 // The Card
-                if (state.cloudTypes.isNotEmpty()) {
+                state.selectedInfo?.let { info ->
                     InfoCard(
-                        cloudType = state.cloudTypes.first(),
+                        content = info,
                         onClose = onHideInfoCard,
                         modifier = Modifier.height(cardHeight)
                     )
@@ -381,16 +472,42 @@ fun DaySkyScreen(
 
 @Composable
 private fun InfoCard(
-    cloudType: CloudType,
+    content: InfoContent,
     onClose: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val themeColors = LookUpTheme.colors
-    val description = when (cloudType) {
-        CloudType.CUMULUS -> stringResource(Res.string.cloud_cumulus_desc)
-        CloudType.STRATUS -> stringResource(Res.string.cloud_stratus_desc)
-        CloudType.CIRRUS -> stringResource(Res.string.cloud_cirrus_desc)
-        CloudType.NIMBUS -> stringResource(Res.string.cloud_nimbus_desc)
+    val (title, description, resource) = when (content) {
+        is InfoContent.Cloud -> {
+            val desc = when (content.type) {
+                CloudType.CUMULUS -> stringResource(Res.string.cloud_cumulus_desc)
+                CloudType.STRATUS -> stringResource(Res.string.cloud_stratus_desc)
+                CloudType.CIRRUS -> stringResource(Res.string.cloud_cirrus_desc)
+                CloudType.NIMBUS -> stringResource(Res.string.cloud_nimbus_desc)
+            }
+            val res = when (content.type) {
+                CloudType.CUMULUS -> Res.drawable.CUMULUS
+                CloudType.STRATUS -> Res.drawable.STRATUS
+                CloudType.CIRRUS -> Res.drawable.CIRRUS
+                CloudType.NIMBUS -> Res.drawable.NIMBUS
+            }
+            Triple(content.type.name, desc, res)
+        }
+        is InfoContent.Star -> {
+            val desc = when (content.type) {
+                StarType.CAPELLA -> stringResource(Res.string.star_capella_desc)
+                StarType.CASTOR -> stringResource(Res.string.star_castor_desc)
+                StarType.SIRIUS -> stringResource(Res.string.star_sirius_desc)
+                StarType.RIGEL -> stringResource(Res.string.star_rigel_desc)
+            }
+            val res = when (content.type) {
+                StarType.CAPELLA -> Res.drawable.CAPELLA
+                StarType.CASTOR -> Res.drawable.CASTOR
+                StarType.SIRIUS -> Res.drawable.SIRIUS
+                StarType.RIGEL -> Res.drawable.RIGEL
+            }
+            Triple(content.type.name, desc, res)
+        }
     }
 
     Surface(
@@ -424,7 +541,7 @@ private fun InfoCard(
             Spacer(modifier = Modifier.height(24.dp))
             
             Text(
-                text = cloudType.name,
+                text = title,
                 modifier = Modifier.align(Alignment.CenterHorizontally),
                 style = MaterialTheme.typography.headlineMedium.copy(
                     fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
@@ -444,6 +561,16 @@ private fun InfoCard(
                     style = MaterialTheme.typography.bodyLarge.copy(
                         shadow = themeColors.textShadow
                     )
+                )
+
+                Spacer(modifier = Modifier.height(32.dp))
+
+                Image(
+                    painter = painterResource(resource),
+                    contentDescription = title,
+                    modifier = Modifier
+                        .size(120.dp)
+                        .align(Alignment.CenterHorizontally)
                 )
             }
         }
@@ -554,7 +681,7 @@ private fun SunBody(
         )
     )
 
-    val targetSunbeamSize = if (isExpanded) sunSize * 20f else if (isLoading) sunSize * pulseScale else if (themeType == AppThemeType.NIGHT) sunSize * 0.5f else sunSize * 1.5f
+    val targetSunbeamSize = if (isExpanded) sunSize * 20f else if (isLoading) sunSize * pulseScale else if (themeType == AppThemeType.NIGHT) sunSize * 1.2f else sunSize * 1.5f
     val sunbeamSize by animateDpAsState(
         targetValue = targetSunbeamSize,
         animationSpec = if (isLoading) tween(0) else tween(durationMillis = 1000)

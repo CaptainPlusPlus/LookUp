@@ -381,4 +381,20 @@ class DaySkyViewModelTest {
         viewModel.onBackTapped()
         assertEquals(false, viewModel.state.value.isInfoCardVisible)
     }
+
+    @Test
+    fun testOnStarTapped_ShowsInfoCardWithStar() = runBlocking {
+        val locationRepo = FakeLocationRepositoryForDaySky()
+        val sunRepo = FakeSunRepositoryForDaySky()
+        val getSunAngle = GetSunAngle(locationRepo, sunRepo)
+        val viewModel = DaySkyViewModel(getSunAngle, locationRepo, sunRepo, FakeCloudRepositoryForDaySky())
+
+        delay(100)
+        viewModel.onStarTapped(day.domain.StarType.CAPELLA)
+        
+        val state = viewModel.state.value
+        assertEquals(true, state.isInfoCardVisible)
+        assertTrue(state.selectedInfo is InfoContent.Star)
+        assertEquals(day.domain.StarType.CAPELLA, (state.selectedInfo as InfoContent.Star).type)
+    }
 }
