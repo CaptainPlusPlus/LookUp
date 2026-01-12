@@ -66,6 +66,11 @@ class FakeSunRepositoryForDaySky(
     }
 }
 
+class FakeCloudRepositoryForDaySky : day.domain.CloudRepository {
+    var mockResult: Result<day.domain.CloudResult> = Result.success(day.domain.CloudResult(emptyList(), day.domain.InputsUsed(0, null)))
+    override suspend fun getCloudTypes(lat: Double, lon: Double): Result<day.domain.CloudResult> = mockResult
+}
+
 class DaySkyViewModelTest {
     @Test
     fun testRefresh_LoadsLocationAndSunAngle() = runBlocking {
@@ -73,7 +78,7 @@ class DaySkyViewModelTest {
         val sunRepo = FakeSunRepositoryForDaySky(mockAngle = 75f)
         val getSunAngle = GetSunAngle(locationRepo, sunRepo)
 
-        val viewModel = DaySkyViewModel(getSunAngle, locationRepo, sunRepo)
+        val viewModel = DaySkyViewModel(getSunAngle, locationRepo, sunRepo, FakeCloudRepositoryForDaySky())
 
         // Wait for init to complete
         delay(100)
@@ -94,7 +99,7 @@ class DaySkyViewModelTest {
         val sunRepo = FakeSunRepositoryForDaySky(mockAngle = 120f)
         val getSunAngle = GetSunAngle(locationRepo, sunRepo)
 
-        val viewModel = DaySkyViewModel(getSunAngle, locationRepo, sunRepo)
+        val viewModel = DaySkyViewModel(getSunAngle, locationRepo, sunRepo, FakeCloudRepositoryForDaySky())
 
         // Wait for init to complete
         delay(100)
@@ -112,7 +117,7 @@ class DaySkyViewModelTest {
         val sunRepo = FakeSunRepositoryForDaySky()
         val getSunAngle = GetSunAngle(locationRepo, sunRepo)
 
-        val viewModel = DaySkyViewModel(getSunAngle, locationRepo, sunRepo)
+        val viewModel = DaySkyViewModel(getSunAngle, locationRepo, sunRepo, FakeCloudRepositoryForDaySky())
 
         // Wait for init
         delay(100)
@@ -129,7 +134,7 @@ class DaySkyViewModelTest {
         val sunRepo = FakeSunRepositoryForDaySky()
         val getSunAngle = GetSunAngle(locationRepo, sunRepo)
 
-        val viewModel = DaySkyViewModel(getSunAngle, locationRepo, sunRepo)
+        val viewModel = DaySkyViewModel(getSunAngle, locationRepo, sunRepo, FakeCloudRepositoryForDaySky())
 
         // Wait for init
         delay(100)
@@ -151,7 +156,7 @@ class DaySkyViewModelTest {
         val sunRepo = FakeSunRepositoryForDaySky(mockAngle = 90f)
         val getSunAngle = GetSunAngle(locationRepo, sunRepo)
 
-        val viewModel = DaySkyViewModel(getSunAngle, locationRepo, sunRepo)
+        val viewModel = DaySkyViewModel(getSunAngle, locationRepo, sunRepo, FakeCloudRepositoryForDaySky())
 
         // Wait for init to complete
         delay(100)
@@ -170,7 +175,7 @@ class DaySkyViewModelTest {
         val locationRepo = FakeLocationRepositoryForDaySky()
         val sunRepo = FakeSunRepositoryForDaySky()
         val getSunAngle = GetSunAngle(locationRepo, sunRepo)
-        val viewModel = DaySkyViewModel(getSunAngle, locationRepo, sunRepo)
+        val viewModel = DaySkyViewModel(getSunAngle, locationRepo, sunRepo, FakeCloudRepositoryForDaySky())
 
         var navigated = false
         viewModel.onChangeLocationClicked {
@@ -194,7 +199,7 @@ class DaySkyViewModelTest {
             )
         )
         val getSunAngle = GetSunAngle(locationRepo, sunRepo)
-        val viewModel = DaySkyViewModel(getSunAngle, locationRepo, sunRepo)
+        val viewModel = DaySkyViewModel(getSunAngle, locationRepo, sunRepo, FakeCloudRepositoryForDaySky())
 
         delay(100)
         viewModel.onSunTapped()
@@ -220,7 +225,7 @@ class DaySkyViewModelTest {
             )
         )
         val getSunAngle = GetSunAngle(locationRepo, sunRepo)
-        val viewModel = DaySkyViewModel(getSunAngle, locationRepo, sunRepo)
+        val viewModel = DaySkyViewModel(getSunAngle, locationRepo, sunRepo, FakeCloudRepositoryForDaySky())
 
         delay(100)
         viewModel.onSunTapped()
@@ -256,7 +261,7 @@ class DaySkyViewModelTest {
             )
         )
         val getSunAngle = GetSunAngle(locationRepo, sunRepo)
-        val viewModel = DaySkyViewModel(getSunAngle, locationRepo, sunRepo)
+        val viewModel = DaySkyViewModel(getSunAngle, locationRepo, sunRepo, FakeCloudRepositoryForDaySky())
 
         delay(100)
         viewModel.onSunTapped()
@@ -274,7 +279,7 @@ class DaySkyViewModelTest {
         val sunRepo = FakeSunRepositoryForDaySky(mockAngle = 10f) // Nighttime
         val getSunAngle = GetSunAngle(locationRepo, sunRepo)
 
-        val viewModel = DaySkyViewModel(getSunAngle, locationRepo, sunRepo)
+        val viewModel = DaySkyViewModel(getSunAngle, locationRepo, sunRepo, FakeCloudRepositoryForDaySky())
 
         // Wait for init to complete
         delay(100)
@@ -290,7 +295,7 @@ class DaySkyViewModelTest {
         val sunRepo = FakeSunRepositoryForDaySky(mockAngle = 45f) // Daytime
         val getSunAngle = GetSunAngle(locationRepo, sunRepo)
 
-        val viewModel = DaySkyViewModel(getSunAngle, locationRepo, sunRepo)
+        val viewModel = DaySkyViewModel(getSunAngle, locationRepo, sunRepo, FakeCloudRepositoryForDaySky())
 
         // Wait for init to complete
         delay(100)
@@ -298,5 +303,25 @@ class DaySkyViewModelTest {
         val state = viewModel.state.value
         assertEquals(AppThemeType.DAY, state.themeType)
         assertEquals(45f, state.sunAngleDeg)
+    }
+
+    @Test
+    fun testRefresh_LoadsClouds() = runBlocking {
+        val locationRepo = FakeLocationRepositoryForDaySky()
+        val sunRepo = FakeSunRepositoryForDaySky()
+        val getSunAngle = GetSunAngle(locationRepo, sunRepo)
+        val cloudRepo = FakeCloudRepositoryForDaySky()
+        cloudRepo.mockResult = Result.success(
+            day.domain.CloudResult(
+                listOf(day.domain.CloudType.CUMULUS),
+                day.domain.InputsUsed(20, 800)
+            )
+        )
+
+        val viewModel = DaySkyViewModel(getSunAngle, locationRepo, sunRepo, cloudRepo)
+
+        delay(100)
+
+        assertEquals(listOf(day.domain.CloudType.CUMULUS), viewModel.state.value.cloudTypes)
     }
 }

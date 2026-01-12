@@ -35,12 +35,14 @@ data class DaySkyState(
     val eventTime: String? = null,
     val isBeforeSunset: Boolean = false,
     val isBeforeSunrise: Boolean = false,
+    val cloudTypes: List<day.domain.CloudType> = emptyList(),
 )
 
 class DaySkyViewModel(
     private val getSunAngleNow: GetSunAngle,
     private val locationRepo: LocationRepository,
     private val sunRepo: SunRepository,
+    private val cloudRepo: day.domain.CloudRepository,
 ) : ViewModel() {
     private val _state = MutableStateFlow(DaySkyState())
     val state: StateFlow<DaySkyState> = _state.asStateFlow()
@@ -159,8 +161,9 @@ class DaySkyViewModel(
                 val label = locationRepo.getActiveLabel()
                 val point = locationRepo.resolveActivePoint()
                 val angle = getSunAngleNow()
-                UiLocation(label, point.latitudeDeg, point.longitudeDeg) to angle
-            }.onSuccess { (uiLocation, angle) ->
+                val clouds = cloudRepo.getCloudTypes(point.latitudeDeg, point.longitudeDeg).getOrDefault(day.domain.CloudResult(emptyList(), day.domain.InputsUsed(0, null)))
+                Triple(UiLocation(label, point.latitudeDeg, point.longitudeDeg), angle, clouds.types)
+            }.onSuccess { (uiLocation, angle, cloudTypes) ->
                 val themeType = when {
                     angle < 15f || angle > 165f -> AppThemeType.NIGHT
                     (angle in 15f..35f) || (angle in 145f..165f) -> AppThemeType.GOLDEN_HOUR
@@ -173,7 +176,8 @@ class DaySkyViewModel(
                         location = uiLocation,
                         isLoading = false,
                         error = null,
-                        themeType = themeType
+                        themeType = themeType,
+                        cloudTypes = cloudTypes
                     )
                 }
             }.onFailure { t ->

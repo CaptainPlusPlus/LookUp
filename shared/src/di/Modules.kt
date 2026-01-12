@@ -1,11 +1,13 @@
 package di
 import day.data.CitySearchRepositoryImpl
+import day.data.CloudRepositoryImpl
 import day.data.DeviceLocationRepositoryImpl
 import day.data.LocationRepositoryImpl
 import day.data.SunRepositoryImpl
 import day.data.storage.PreferencesStorage
 import day.data.storage.PreferencesStorageImpl
 import day.domain.CitySearchRepository
+import day.domain.CloudRepository
 import day.domain.DeviceLocationRepository
 import day.domain.GetSunAngle
 import day.domain.LocationRepository
@@ -46,11 +48,12 @@ val sharedModule =
         singleOf(::SunRepositoryImpl) bind SunRepository::class
         singleOf(::CitySearchRepositoryImpl) bind CitySearchRepository::class
         singleOf(::DeviceLocationRepositoryImpl) bind DeviceLocationRepository::class
+        singleOf(::CloudRepositoryImpl) bind CloudRepository::class
 
         // Use Cases
         singleOf(::GetSunAngle)
 
         // ViewModels
-        viewModel { DaySkyViewModel(get(), get(), get()) }
+        viewModel { DaySkyViewModel(get(), get(), get(), get()) }
         viewModelOf(::WelcomeViewModel)
     }

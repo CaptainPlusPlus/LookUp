@@ -3,6 +3,8 @@ package day.presentation
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -176,6 +178,27 @@ fun DaySkyScreen(
             themeType = LookUpTheme.themeType,
             onClick = onSunClick
         )
+        
+        // Cloud types at the center
+        AnimatedVisibility(
+            visible = !(state.isExpanded && state.countdownSeconds != null) && !state.isLoading,
+            enter = fadeIn(animationSpec = tween(1000)),
+            exit = fadeOut(animationSpec = tween(500)) + slideOutVertically { it },
+            modifier = Modifier.align(Alignment.Center)
+        ) {
+            val cloudText = if (state.cloudTypes.isEmpty()) {
+                "NOTHING"
+            } else {
+                state.cloudTypes.joinToString(" & ") { it.name.lowercase().replaceFirstChar { c -> c.uppercase() } }
+            }
+            Text(
+                text = cloudText,
+                style = MaterialTheme.typography.headlineMedium.copy(
+                    color = themeColors.textColor,
+                    shadow = themeColors.textShadow
+                )
+            )
+        }
 
         AnimatedVisibility(
             visible = state.isExpanded && state.countdownSeconds != null,
