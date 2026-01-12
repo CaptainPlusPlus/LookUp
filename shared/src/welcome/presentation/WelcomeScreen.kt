@@ -33,8 +33,6 @@ import shared.generated.resources.use_location
 import shared.generated.resources.welcome_subtitle
 import shared.generated.resources.welcome_title
 
-// Use literal strings for now to avoid build issues with generated resources in this environment
-
 @Composable
 fun WelcomeScreenRoot(
     viewModel: WelcomeViewModel = koinViewModel(),
@@ -101,7 +99,7 @@ fun WelcomeScreen(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(horizontal = 64.dp, vertical = 32.dp), // Even more padding to take up middle third
+                    .padding(horizontal = 47.dp, vertical = 32.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
@@ -163,18 +161,18 @@ fun WelcomeScreen(
                                     .fillMaxWidth()
                                     .heightIn(max = 200.dp),
                                 tonalElevation = 8.dp,
-                                color = Color.White.copy(alpha = 0.9f), // Whiter background for suggestions
+                                color = Color.White.copy(alpha = 0.9f),
                                 shape = RoundedCornerShape(bottomStart = 12.dp, bottomEnd = 12.dp)
                             ) {
                                 LazyColumn {
                                     items(searchResults) { city ->
                                         ListItem(
-                                            headlineContent = { 
+                                            headlineContent = {
                                                 Text(
                                                     city.label,
-                                                    color = Color.Black, // Black text for suggestions
-                                                    style = TextStyle(shadow = null) // Remove shadow for clarity on white
-                                                ) 
+                                                    color = Color.Black,
+                                                    style = TextStyle(shadow = null)
+                                                )
                                             },
                                             colors = ListItemDefaults.colors(
                                                 containerColor = Color.Transparent

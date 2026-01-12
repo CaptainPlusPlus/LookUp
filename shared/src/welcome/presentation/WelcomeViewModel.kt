@@ -32,7 +32,7 @@ class WelcomeViewModel(
     val searchResults = _state
         .map { it.searchQuery }
         .distinctUntilChanged()
-        .debounce(500)
+        .debounce(SEARCH_DEBOUNCE_MS)
         .mapLatest { query ->
             if (query.isBlank()) emptyList()
             else {
@@ -56,8 +56,7 @@ class WelcomeViewModel(
     fun onCitySelected(city: CitySearchResult) {
         viewModelScope.launch {
             _state.update { it.copy(isSearching = true) }
-            // Artificial delay to show the loading state if it's too fast
-            delay(500)
+            delay(LOADING_DELAY_MS)
             locationRepo.saveLocation(
                 label = city.label,
                 point = city.point,
@@ -71,18 +70,24 @@ class WelcomeViewModel(
         viewModelScope.launch {
             _state.update { it.copy(isSearching = true, error = null) }
             val location = deviceLocationRepo.getCurrentLocation()
-            // Artificial delay
-            delay(500)
+            delay(LOADING_DELAY_MS)
             if (location != null) {
                 locationRepo.saveLocation(
-                    label = "Current Location",
+                    label = DEFAULT_LOCATION_LABEL,
                     point = location,
                     isCurrent = true
                 )
                 _state.update { it.copy(isLocationObtained = true, isSearching = false) }
             } else {
-                _state.update { it.copy(error = "Could not get device location", isSearching = false) }
+                _state.update { it.copy(error = ERROR_DEVICE_LOCATION, isSearching = false) }
             }
         }
+    }
+
+    companion object {
+        private const val SEARCH_DEBOUNCE_MS = 500L
+        private const val LOADING_DELAY_MS = 500L
+        private const val DEFAULT_LOCATION_LABEL = "Current Location"
+        private const val ERROR_DEVICE_LOCATION = "Could not get device location"
     }
 }

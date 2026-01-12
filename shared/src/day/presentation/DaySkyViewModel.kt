@@ -18,33 +18,6 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import kotlin.time.Duration.Companion.hours
 
-data class UiLocation(
-    val label: String,
-    val latitudeDeg: Double,
-    val longitudeDeg: Double,
-)
-
-data class DaySkyState(
-    val sunAngleDeg: Float = 0f,
-    val location: UiLocation? = null,
-    val isLoading: Boolean = false,
-    val error: String? = null,
-    val isExpanded: Boolean = false,
-    val themeType: AppThemeType = AppThemeType.DAY,
-    val countdownSeconds: Long? = null,
-    val eventTime: String? = null,
-    val isBeforeSunset: Boolean = false,
-    val isBeforeSunrise: Boolean = false,
-    val cloudTypes: List<day.domain.CloudType> = emptyList(),
-    val isInfoCardVisible: Boolean = false,
-    val selectedInfo: InfoContent? = null,
-)
-
-sealed interface InfoContent {
-    data class Cloud(val type: day.domain.CloudType) : InfoContent
-    data class Star(val type: day.domain.StarType) : InfoContent
-}
-
 class DaySkyViewModel(
     private val getSunAngleNow: GetSunAngle,
     private val locationRepo: LocationRepository,
@@ -61,7 +34,7 @@ class DaySkyViewModel(
         refresh()
         tickerJob = viewModelScope.launch {
             while (true) {
-                delay(60_000L)
+                delay(TICK_INTERVAL_MS)
                 refresh()
             }
         }
@@ -82,7 +55,7 @@ class DaySkyViewModel(
     }
 
     fun onToggleInfoCard() {
-        _state.update { 
+        _state.update {
             val isVisible = !it.isInfoCardVisible
             it.copy(
                 isInfoCardVisible = isVisible,
@@ -104,7 +77,7 @@ class DaySkyViewModel(
         countdownJob = viewModelScope.launch {
             while (true) {
                 updateCountdown()
-                delay(1000L)
+                delay(COUNTDOWN_DELAY_MS)
             }
         }
     }
@@ -112,7 +85,14 @@ class DaySkyViewModel(
     private fun stopCountdown() {
         countdownJob?.cancel()
         countdownJob = null
-        _state.update { it.copy(countdownSeconds = null, eventTime = null, isBeforeSunset = false, isBeforeSunrise = false) }
+        _state.update {
+            it.copy(
+                countdownSeconds = null,
+                eventTime = null,
+                isBeforeSunset = false,
+                isBeforeSunrise = false
+            )
+        }
     }
 
     private suspend fun updateCountdown() {
@@ -124,19 +104,13 @@ class DaySkyViewModel(
         val events = try {
             val todayEvents = sunRepo.getSunEvents(point, null)
             if (!isNight) {
-                if (now < todayEvents.sunset) {
-                    todayEvents
-                } else {
-                    // It's day by theme but technically after sunset? Unlikely but handle it
-                    null
-                }
+                if (now < todayEvents.sunset) todayEvents else null
             } else {
                 if (now < todayEvents.sunrise) {
                     todayEvents
                 } else {
-                    // Sunset has passed today, next sunrise is tomorrow
                     val tomorrow = (now + 24.hours).toLocalDateTime(TimeZone.currentSystemDefault())
-                    val dateStr = "${tomorrow.year}-${tomorrow.monthNumber.toString().padStart(2, '0')}-${tomorrow.dayOfMonth.toString().padStart(2, '0')}"
+                    val dateStr = formatLocalDate(tomorrow)
                     sunRepo.getSunEvents(point, dateStr)
                 }
             }
@@ -145,7 +119,7 @@ class DaySkyViewModel(
         }
 
         if (events == null) {
-            _state.update { it.copy(countdownSeconds = null, eventTime = null, isBeforeSunset = false, isBeforeSunrise = false) }
+            clearCountdownState()
             return
         }
 
@@ -155,7 +129,7 @@ class DaySkyViewModel(
             _state.update {
                 it.copy(
                     countdownSeconds = diff,
-                    eventTime = "${lt.hour.toString().padStart(2, '0')}:${lt.minute.toString().padStart(2, '0')}",
+                    eventTime = formatTime(lt.hour, lt.minute),
                     isBeforeSunset = true,
                     isBeforeSunrise = false
                 )
@@ -166,14 +140,36 @@ class DaySkyViewModel(
             _state.update {
                 it.copy(
                     countdownSeconds = diff,
-                    eventTime = "${lt.hour.toString().padStart(2, '0')}:${lt.minute.toString().padStart(2, '0')}",
+                    eventTime = formatTime(lt.hour, lt.minute),
                     isBeforeSunset = false,
                     isBeforeSunrise = true
                 )
             }
         } else {
-            _state.update { it.copy(countdownSeconds = null, eventTime = null, isBeforeSunset = false, isBeforeSunrise = false) }
+            clearCountdownState()
         }
+    }
+
+    private fun clearCountdownState() {
+        _state.update {
+            it.copy(
+                countdownSeconds = null,
+                eventTime = null,
+                isBeforeSunset = false,
+                isBeforeSunrise = false
+            )
+        }
+    }
+
+    private fun formatLocalDate(date: kotlinx.datetime.LocalDateTime): String {
+        val year = date.year
+        val month = date.monthNumber.toString().padStart(2, '0')
+        val day = date.dayOfMonth.toString().padStart(2, '0')
+        return "$year-$month-$day"
+    }
+
+    private fun formatTime(hour: Int, minute: Int): String {
+        return "${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}"
     }
 
     fun onChangeLocationClicked(onNavToWelcome: () -> Unit) {
@@ -190,15 +186,17 @@ class DaySkyViewModel(
                 val label = locationRepo.getActiveLabel()
                 val point = locationRepo.resolveActivePoint()
                 val angle = getSunAngleNow()
-                val clouds = cloudRepo.getCloudTypes(point.latitudeDeg, point.longitudeDeg).getOrDefault(day.domain.CloudResult(emptyList(), day.domain.InputsUsed(0, null)))
+                val clouds = cloudRepo.getCloudTypes(point.latitudeDeg, point.longitudeDeg)
+                    .getOrDefault(
+                        day.domain.CloudResult(
+                            emptyList(),
+                            day.domain.InputsUsed(0, null)
+                        )
+                    )
                 Triple(UiLocation(label, point.latitudeDeg, point.longitudeDeg), angle, clouds.types)
             }.onSuccess { (uiLocation, angle, cloudTypes) ->
-                val themeType = when {
-                    angle < 15f || angle > 165f -> AppThemeType.NIGHT
-                    (angle in 15f..35f) || (angle in 145f..165f) -> AppThemeType.GOLDEN_HOUR
-                    else -> AppThemeType.DAY
-                }
-                val finalAngle = if (themeType == AppThemeType.NIGHT) 90f else angle
+                val themeType = determineThemeType(angle)
+                val finalAngle = if (themeType == AppThemeType.NIGHT) NIGHT_SUN_ANGLE else angle
                 _state.update {
                     it.copy(
                         sunAngleDeg = finalAngle,
@@ -206,7 +204,8 @@ class DaySkyViewModel(
                         isLoading = false,
                         error = null,
                         themeType = themeType,
-                        cloudTypes = cloudTypes
+                        cloudTypes = cloudTypes,
+                        selectedInfo = it.selectedInfo ?: cloudTypes.firstOrNull()?.let { type -> InfoContent.Cloud(type) }
                     )
                 }
             }.onFailure { t ->
@@ -220,9 +219,25 @@ class DaySkyViewModel(
         }
     }
 
+    private fun determineThemeType(angle: Float): AppThemeType {
+        return when {
+            angle < NIGHT_THRESHOLD || angle > (180f - NIGHT_THRESHOLD) -> AppThemeType.NIGHT
+            (angle in NIGHT_THRESHOLD..GOLDEN_HOUR_THRESHOLD) || (angle in (180f - GOLDEN_HOUR_THRESHOLD)..(180f - NIGHT_THRESHOLD)) -> AppThemeType.GOLDEN_HOUR
+            else -> AppThemeType.DAY
+        }
+    }
+
     override fun onCleared() {
         super.onCleared()
         tickerJob?.cancel()
         countdownJob?.cancel()
+    }
+
+    companion object {
+        private const val TICK_INTERVAL_MS = 60_000L
+        private const val COUNTDOWN_DELAY_MS = 1000L
+        private const val NIGHT_THRESHOLD = 15f
+        private const val GOLDEN_HOUR_THRESHOLD = 35f
+        private const val NIGHT_SUN_ANGLE = 90f
     }
 }

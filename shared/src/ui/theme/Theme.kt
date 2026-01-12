@@ -47,13 +47,13 @@ fun LookUpTheme(
             skyTop = DaySkyTop,
             skyBottom = DaySkyBottom,
             sunColor = SunYellow,
-            textColor = Color.White,
+            textColor = Color.Black,
             textShadow = Shadow(
-                color = DayTextShadow,
+                color = Color.White.copy(alpha = 0.5f),
                 offset = Offset(1f, 1f),
                 blurRadius = 1f
             ),
-            accentColor = Color(0xFF4682B4) // SteelBlue for accent in Day theme
+            accentColor = Color(0xFF4682B4)
         )
         AppThemeType.GOLDEN_HOUR -> AppColors(
             skyTop = GoldenSkyTop,
@@ -70,7 +70,7 @@ fun LookUpTheme(
         AppThemeType.NIGHT -> AppColors(
             skyTop = NightSkyTop,
             skyBottom = NightSkyBottom,
-            sunColor = Color.Transparent, // No sun at night? Or moon?
+            sunColor = Color.Transparent,
             textColor = NightText,
             textShadow = null
         )

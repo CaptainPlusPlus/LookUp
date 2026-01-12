@@ -16,10 +16,10 @@ class CloudRepositoryImpl(
 
     override suspend fun getCloudTypes(lat: Double, lon: Double): Result<CloudResult> {
         return runCatching {
-            val response: OpenMeteoResponse = httpClient.get("https://api.open-meteo.com/v1/forecast") {
+            val response: OpenMeteoResponse = httpClient.get(BASE_URL) {
                 parameter("latitude", lat)
                 parameter("longitude", lon)
-                parameter("current", "weather_code,cloud_cover,cloud_cover_low,cloud_cover_mid,cloud_cover_high")
+                parameter("current", CURRENT_PARAMS)
             }.body()
 
             val current = response.current
@@ -41,61 +41,70 @@ class CloudRepositoryImpl(
         cloudHigh: Int,
         weatherCode: Int?
     ): List<CloudType> {
-        // 15% threshold for "NOTHING" instead of 10%
-        val isPrecipOrStorm = weatherCode != null && weatherCode >= 51
-        if (cloudCover <= 15 && !isPrecipOrStorm) {
+        val isPrecipOrStorm = weatherCode != null && weatherCode >= PRECIP_THRESHOLD
+        if (cloudCover <= COVER_MIN_THRESHOLD && !isPrecipOrStorm) {
             return emptyList()
         }
 
         val types = LinkedHashSet<CloudType>()
 
-        // A) Precipitation/storm dominates → Nimbus
         if (isPrecipOrStorm) {
             types.add(CloudType.NIMBUS)
         }
 
-        // B) Atmosphere (Fog) -> Stratus
-        if (weatherCode == 45 || weatherCode == 48) {
+        if (weatherCode == WEATHER_CODE_FOG || weatherCode == WEATHER_CODE_FOG_DEPOSIT) {
             types.add(CloudType.STRATUS)
         }
 
-        // C) High Clouds -> Cirrus
-        if (cloudHigh >= 20) {
+        if (cloudHigh >= HIGH_CLOUD_THRESHOLD) {
             types.add(CloudType.CIRRUS)
         }
 
-        // D) Mid Clouds -> Stratus or Cumulus
-        if (cloudMid >= 25) {
-            if (cloudMid >= 60 || weatherCode == 3) {
+        if (cloudMid >= MID_CLOUD_THRESHOLD) {
+            if (cloudMid >= MID_CLOUD_HEAVY_THRESHOLD || weatherCode == WEATHER_CODE_OVERCAST) {
                 types.add(CloudType.STRATUS)
             } else {
                 types.add(CloudType.CUMULUS)
             }
         }
 
-        // E) Low Clouds -> Stratus or Cumulus
-        if (cloudLow >= 25) {
-            if (cloudLow >= 50 || weatherCode == 3) {
+        if (cloudLow >= LOW_CLOUD_THRESHOLD) {
+            if (cloudLow >= LOW_CLOUD_HEAVY_THRESHOLD || weatherCode == WEATHER_CODE_OVERCAST) {
                 types.add(CloudType.STRATUS)
             } else {
                 types.add(CloudType.CUMULUS)
             }
         }
 
-        // F) Fallback if total cover is high but components are low
-        if (types.isEmpty() && cloudCover > 15) {
-            if (cloudCover > 50) types.add(CloudType.STRATUS)
+        if (types.isEmpty() && cloudCover > COVER_MIN_THRESHOLD) {
+            if (cloudCover > COVER_FALLBACK_THRESHOLD) types.add(CloudType.STRATUS)
             else types.add(CloudType.CUMULUS)
         }
 
-        // Ordering: NIMBUS > STRATUS > CUMULUS > CIRRUS
         val orderedResult = mutableListOf<CloudType>()
         if (types.contains(CloudType.NIMBUS)) orderedResult.add(CloudType.NIMBUS)
         if (types.contains(CloudType.STRATUS)) orderedResult.add(CloudType.STRATUS)
         if (types.contains(CloudType.CUMULUS)) orderedResult.add(CloudType.CUMULUS)
         if (types.contains(CloudType.CIRRUS)) orderedResult.add(CloudType.CIRRUS)
 
-        return orderedResult.take(4)
+        return orderedResult.take(MAX_CLOUD_TYPES)
+    }
+
+    companion object {
+        private const val BASE_URL = "https://api.open-meteo.com/v1/forecast"
+        private const val CURRENT_PARAMS = "weather_code,cloud_cover,cloud_cover_low,cloud_cover_mid,cloud_cover_high"
+        private const val PRECIP_THRESHOLD = 51
+        private const val COVER_MIN_THRESHOLD = 0
+        private const val WEATHER_CODE_FOG = 45
+        private const val WEATHER_CODE_FOG_DEPOSIT = 48
+        private const val WEATHER_CODE_OVERCAST = 3
+        private const val HIGH_CLOUD_THRESHOLD = 20
+        private const val MID_CLOUD_THRESHOLD = 25
+        private const val MID_CLOUD_HEAVY_THRESHOLD = 60
+        private const val LOW_CLOUD_THRESHOLD = 25
+        private const val LOW_CLOUD_HEAVY_THRESHOLD = 50
+        private const val COVER_FALLBACK_THRESHOLD = 50
+        private const val MAX_CLOUD_TYPES = 4
     }
 }
 

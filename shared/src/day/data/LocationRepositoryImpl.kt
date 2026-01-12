@@ -20,8 +20,6 @@ class LocationRepositoryImpl(private val storage: PreferencesStorage) : Location
     override suspend fun setChoice(choice: LocationChoice) {
         when (choice) {
             is LocationChoice.Saved -> {
-                // If we have multiple saved locations in the future, we'd set the current one here
-                // For now, this is a no-op since we only have one location
             }
             LocationChoice.Device -> {
                 storage.clearCurrentLocation()
@@ -40,7 +38,7 @@ class LocationRepositoryImpl(private val storage: PreferencesStorage) : Location
         return if (current != null) {
             GeoPoint(current.latitudeDeg, current.longitudeDeg)
         } else {
-            GeoPoint(0.0, 0.0) // Fallback
+            GeoPoint(0.0, 0.0)
         }
     }
 
@@ -59,7 +57,6 @@ class LocationRepositoryImpl(private val storage: PreferencesStorage) : Location
         if (isCurrent) {
             storage.saveCurrentLocation(entity)
         }
-        // If not current, we don't store it (for simplicity with single location)
     }
 
     override suspend fun hasLocation(): Boolean {

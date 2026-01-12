@@ -13,8 +13,8 @@ import org.koin.compose.koinInject
 import welcome.presentation.WelcomeScreenRoot
 
 sealed class RootRoute(val route: String) {
-    object Welcome : RootRoute("welcome")
-    object Main : RootRoute("main")
+    data object Welcome : RootRoute("welcome")
+    data object Main : RootRoute("main")
 }
 
 @Composable
@@ -22,7 +22,6 @@ fun AppNavigation() {
     val navController = rememberNavController()
     val locationRepository: LocationRepository = koinInject()
     
-    // Flush database on startup for testing as requested
     LaunchedEffect(Unit) {
         locationRepository.clearLocation()
     }

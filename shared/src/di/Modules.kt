@@ -40,20 +40,16 @@ val sharedModule =
             }
         }
 
-        // Storage (replace database/dao)
         singleOf(::PreferencesStorageImpl) bind PreferencesStorage::class
 
-        // Repositories
         singleOf(::LocationRepositoryImpl) bind LocationRepository::class
         singleOf(::SunRepositoryImpl) bind SunRepository::class
         singleOf(::CitySearchRepositoryImpl) bind CitySearchRepository::class
         singleOf(::DeviceLocationRepositoryImpl) bind DeviceLocationRepository::class
         singleOf(::CloudRepositoryImpl) bind CloudRepository::class
 
-        // Use Cases
         singleOf(::GetSunAngle)
 
-        // ViewModels
         viewModel { DaySkyViewModel(get(), get(), get(), get()) }
         viewModelOf(::WelcomeViewModel)
     }

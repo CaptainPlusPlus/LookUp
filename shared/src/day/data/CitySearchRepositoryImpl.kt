@@ -23,11 +23,11 @@ class CitySearchRepositoryImpl(private val httpClient: HttpClient) : CitySearchR
     override suspend fun searchCity(query: String): List<CitySearchResult> {
         if (query.isBlank()) return emptyList()
         return try {
-            val results: List<NominatimResult> = httpClient.get("https://nominatim.openstreetmap.org/search") {
+            val results: List<NominatimResult> = httpClient.get(SEARCH_URL) {
                 parameter("q", query)
                 parameter("format", "json")
-                parameter("limit", 5)
-                header("User-Agent", "LookUpApp")
+                parameter("limit", SEARCH_LIMIT)
+                header("User-Agent", USER_AGENT)
             }.body()
 
             results.map {
@@ -40,5 +40,11 @@ class CitySearchRepositoryImpl(private val httpClient: HttpClient) : CitySearchR
         } catch (e: Exception) {
             emptyList()
         }
+    }
+
+    companion object {
+        private const val SEARCH_URL = "https://nominatim.openstreetmap.org/search"
+        private const val SEARCH_LIMIT = 5
+        private const val USER_AGENT = "LookUpApp"
     }
 }

@@ -6,6 +6,7 @@ dependencies:
   - io.insert-koin:koin-android:4.1.1
   - io.insert-koin:koin-test:4.1.1
   - io.insert-koin:koin-compose:4.1.1
+  - io.ktor:ktor-client-okhttp:3.0.3
 
 settings:
   compose: enabled

@@ -1,7 +1,7 @@
 package day.domain
 
 interface SunRepository {
-    suspend fun getSunAngleNowDeg(at: GeoPoint): Float // 0..180
+    suspend fun getSunAngleNowDeg(at: GeoPoint): Float
     suspend fun getSunEvents(at: GeoPoint, date: String? = null): SunEvents
 }
 

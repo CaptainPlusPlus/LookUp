@@ -5,7 +5,11 @@ import day.domain.GeoPoint
 
 actual class DeviceLocationRepositoryImpl : DeviceLocationRepository {
     override suspend fun getCurrentLocation(): GeoPoint? {
-        // JVM/Desktop doesn't have GPS - return mock London coordinates
-        return GeoPoint(51.5074, -0.1278)
+        return GeoPoint(DEFAULT_LAT, DEFAULT_LON)
+    }
+
+    companion object {
+        private const val DEFAULT_LAT = 51.5074
+        private const val DEFAULT_LON = -0.1278
     }
 }

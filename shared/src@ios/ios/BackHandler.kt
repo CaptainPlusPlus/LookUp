@@ -12,14 +12,13 @@ import androidx.compose.ui.unit.dp
 @Composable
 actual fun BackHandler(enabled: Boolean, onBack: () -> Unit) {
     if (enabled) {
-        // Detect swipe from the left edge (first 20dp)
         Box(
             modifier = Modifier
                 .fillMaxHeight()
-                .width(20.dp)
+                .width(EDGE_SWIPE_WIDTH.dp)
                 .pointerInput(Unit) {
                     detectHorizontalDragGestures { change, dragAmount ->
-                        if (dragAmount > 50) { // Simple threshold for back swipe
+                        if (dragAmount > SWIPE_THRESHOLD) {
                             onBack()
                             change.consume()
                         }
@@ -28,3 +27,6 @@ actual fun BackHandler(enabled: Boolean, onBack: () -> Unit) {
         )
     }
 }
+
+private const val EDGE_SWIPE_WIDTH = 20
+private const val SWIPE_THRESHOLD = 50

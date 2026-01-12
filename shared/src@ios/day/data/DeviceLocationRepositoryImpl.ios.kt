@@ -14,11 +14,9 @@ actual class DeviceLocationRepositoryImpl : DeviceLocationRepository {
     private val locationManager = CLLocationManager()
 
     override suspend fun getCurrentLocation(): GeoPoint? {
-        // Check authorization status
         val status = CLLocationManager.authorizationStatus()
         if (status != kCLAuthorizationStatusAuthorizedWhenInUse &&
             status != kCLAuthorizationStatusAuthorizedAlways) {
-            // Request permission
             locationManager.requestWhenInUseAuthorization()
             return null
         }

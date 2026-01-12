@@ -6,7 +6,6 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 
-// Using default SansSerif as "Apple font" surrogate for KMP if actual SF Pro is not bundled
 val AppleFontFamily = FontFamily.SansSerif
 
 val AppTypography = Typography(

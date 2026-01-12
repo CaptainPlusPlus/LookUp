@@ -21,7 +21,6 @@ actual class DeviceLocationRepositoryImpl : DeviceLocationRepository, KoinCompon
     }
 
     override suspend fun getCurrentLocation(): GeoPoint? {
-        // Check permission
         if (ContextCompat.checkSelfPermission(
                 context,
                 Manifest.permission.ACCESS_FINE_LOCATION

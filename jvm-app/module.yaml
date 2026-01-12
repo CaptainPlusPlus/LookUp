@@ -3,6 +3,8 @@ product: jvm/app
 dependencies:
   - ../shared
   - $compose.desktop.currentOs
+  - io.ktor:ktor-client-okhttp:3.0.3
+  - org.jetbrains.kotlinx:kotlinx-coroutines-swing:1.10.1
 
 
 settings:

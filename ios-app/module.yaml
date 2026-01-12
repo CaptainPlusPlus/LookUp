@@ -7,6 +7,7 @@ dependencies:
   - $compose.material3
   - $compose.runtime
   - $compose.ui
+  - io.ktor:ktor-client-darwin:3.0.3
 
 settings:
   compose: enabled
