@@ -1,0 +1,31 @@
+  product:
+    type: lib
+    platforms: [ jvm, android, iosArm64, iosX64, iosSimulatorArm64 ]
+
+  dependencies:
+    - $compose.foundation: exported
+    - $compose.material3: exported
+    - org.jetbrains.compose.components:components-resources:1.7.1
+    - io.insert-koin:koin-core:4.1.1
+    - io.insert-koin:koin-compose:4.1.1
+    - io.insert-koin:koin-compose-viewmodel:4.1.1
+    - io.ktor:ktor-client-core:3.0.3
+    - io.ktor:ktor-client-content-negotiation:3.0.3
+    - io.ktor:ktor-serialization-kotlinx-json:3.0.3
+    - org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3
+    - io.ktor:ktor-client-mock:3.0.3
+    - org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.1
+
+  # Platform-specific dependencies
+  dependencies@jvm:
+    - io.ktor:ktor-client-okhttp:3.0.3
+    - org.jetbrains.kotlinx:kotlinx-coroutines-swing:1.10.1
+  dependencies@android:
+    - io.ktor:ktor-client-okhttp:3.0.3
+    - org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.1
+    - androidx.activity:activity-compose:1.8.2
+  dependencies@ios:
+    - io.ktor:ktor-client-darwin:3.0.3
+
+  settings:
+    compose: enabled

@@ -1,0 +1,12 @@
+product:
+  type: ios/app
+
+dependencies:
+  - ../shared
+  - $compose.foundation
+  - $compose.material3
+  - $compose.runtime
+  - $compose.ui
+
+settings:
+  compose: enabled
