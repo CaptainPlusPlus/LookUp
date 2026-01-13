@@ -17,27 +17,18 @@ Track celestial positions, explore golden hour magic, and discover stars—all f
 
 </div>
 
-## Screenshots
+### Video And Screenshots Demo
+[Video Demo](https://github.com/user-attachments/assets/631cfe97-2aae-4505-8972-320f7cd4f885)
 
 <div align="center">
-
-| Day View | Golden Hour | Night Sky |
-|:--------:|:-----------:|:---------:|
-| <img src="resources_for_readme/counter1.png" width="280"> | <img src="resources_for_readme/counter2.png" width="280"> | <img src="resources_for_readme/NightView.png" width="280"> |
 
 | Star Info Card | Cloud Description | Cloud View |
 |:--------------:|:-----------------:|:----------:|
 | <img src="resources_for_readme/starDescription.png" width="280"> | <img src="resources_for_readme/cloudDescription.png" width="280"> | <img src="resources_for_readme/Clouds1.png" width="280"> |
 
-</div>
-
-### Video Demo
-
-<div align="center">
-
-https://github.com/user-attachments/assets/screen-recording.mp4
-
-<video src="resources_for_readme/Screen recording.mp4" width="600" controls></video>
+| Day View | Golden Hour | Night Sky |
+|:--------:|:-----------:|:---------:|
+| <img src="resources_for_readme/counter1.png" width="280"> | <img src="resources_for_readme/counter2.png" width="280"> | <img src="resources_for_readme/NightView.png" width="280"> |
 
 </div>
 
@@ -191,8 +182,6 @@ The main screen displays a gradient sky that transitions from day (blue) to gold
 **Interactive Elements:**
 Tap the sun to expand into golden hour mode with enhanced visuals. Tap on stars to reveal info cards with details about celestial objects. Change your location anytime via the settings button.
 
-**Platform-Specific Magic:**
-LookUp uses `expect`/`actual` declarations to provide platform-specific implementations for location services and database drivers, while keeping 100% of the UI and business logic shared across Android, iOS, and Desktop.
 ---
 ## Tech Stack
 
@@ -220,3 +209,6 @@ LookUp uses `expect`/`actual` declarations to provide platform-specific implemen
 **🤖 Honest Disclaimer 🤖 AI (Junie, Claude code) was used to structure this README, write many of the TESTS and to generate some of the images, however, they are legally available to be used by everyone.**
 
 </div>
+## License
+
+MIT — see [LICENSE](LICENSE).
