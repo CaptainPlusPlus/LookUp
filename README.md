@@ -10,7 +10,7 @@
 
 **A Compose Kotlin Multiplatform app that visualizes what one can see in the sky right now where you stand -**
 **Be it the sun, the stars or the clouds**
-
+Aimed at curious teenagers and kids, but made for everyone curious.
 Track celestial positions, explore golden hour magic, and discover stars—all from a single interface that runs natively on Android, iOS, and Desktop.
 
 ---
@@ -18,7 +18,9 @@ Track celestial positions, explore golden hour magic, and discover stars—all f
 </div>
 
 ### Video And Screenshots Demo
-[Video Demo](https://github.com/user-attachments/assets/631cfe97-2aae-4505-8972-320f7cd4f885)
+
+https://github.com/user-attachments/assets/033b8b84-98e5-4100-96ab-d6496ac81760
+
 
 <div align="center">
 
@@ -37,14 +39,17 @@ Track celestial positions, explore golden hour magic, and discover stars—all f
 This Compose Multipltform app provides a simple way to receive information about what one can see in the sky at the moment, and was designed with children and teenagers in mind.
 
 
-☁️ **Cloud Analysis** Identifies what clouds are visible at the moment and informs you about them\
+☁️ **Cloud Analysis** Identifies what clouds are visible at the moment and informs you about them with detection of Cumulus, Stratus, Nimbus and Cirrus clouds at said location from weather conditions APIs\
 ☁️ **Real-time sun tracking** with current zenith angle and sunrise/sunset times\
 ☁️ **Adaptive themes** that transition from day to golden hour\
 ☁️ **Star discovery** with detailed info cards about celestial objects (Limited to northern hemisphere) \
 ☁️ **Smart location** via device GPS or city search (OpenStreetMap Nominatim)\
 ☁️ **Smooth animations** All components respond to transitions\
 ☁️ **Database to save location** NOTE: the code here intentinoally forgets location saved in it on startup, for easier testing and deomnstration.
-Can be reintroduced by removing the line flushing `SharedPreferences` on startup.
+Can be reintroduced by removing the line flushing `SharedPreferences` on startup.\ 
+
+<img width="150" height="300" alt="image" src="https://github.com/user-attachments/assets/23a6dbad-d378-4741-827c-10d1e0f304be" />
+
 
 ---
 
