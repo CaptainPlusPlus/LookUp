@@ -206,7 +206,7 @@ Tap the sun to expand into golden hour mode with enhanced visuals. Tap on stars 
 
 **Built with ☁️ for KotlinConf 2026**
 
-**🤖 Honest Disclaimer 🤖 AI (Junie, Claude code) was used to structure this README, write many of the TESTS and to generate some of the images, however, they are legally available to be used by everyone.**
+🤖 Honest Disclaimer 🤖 AI (Junie, Claude code) was used to structure this README, write many of the TESTS and to generate some of the images, however, the images generated are legally available to be used by everyone.
 
 </div>
 ## License
